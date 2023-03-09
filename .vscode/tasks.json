@@ -1,0 +1,35 @@
+{
+    "version": "2.0.0",
+    "options": {
+        "cwd": "${workspaceFolder}/build"   //进入到工程目录的build目录下
+    },
+    "tasks": [
+        {
+            "type": "shell",
+            "label": "cmake",
+            "command": "cmake",   //执行cmake ..命令
+            "args": [
+                ".."
+            ]
+        },
+        {
+            "label": "make",
+            "group": {
+                "kind": "build",
+                "isDefault": true
+            },
+            "command": "make",    //执行make命令
+            "args": [
+
+            ]
+        },
+        {
+            "label": "Build",   
+            "dependsOrder": "sequence",   //按列出的顺序执行依赖项
+            "dependsOn": [
+                "camke",
+                "make"
+            ]
+        }
+    ],
+}

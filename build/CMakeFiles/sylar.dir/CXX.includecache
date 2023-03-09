@@ -1,0 +1,44 @@
+#IncludeRegexLine: ^[ 	]*[#%][ 	]*(include|import)[ 	]*[<"]([^">]+)([">])
+
+#IncludeRegexScan: ^.*$
+
+#IncludeRegexComplain: ^$
+
+#IncludeRegexTransform: 
+
+/home/liangman/sylar/sylar/log.cpp
+log.h
+/home/liangman/sylar/sylar/log.h
+iostream
+-
+functional
+-
+time.h
+-
+cstdarg
+-
+
+/home/liangman/sylar/sylar/log.h
+string
+-
+stdint.h
+-
+memory
+-
+list
+-
+sstream
+-
+fstream
+-
+vector
+-
+map
+-
+singleton.h
+/home/liangman/sylar/sylar/singleton.h
+
+/home/liangman/sylar/sylar/singleton.h
+memory
+-
+
