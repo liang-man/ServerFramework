@@ -23,7 +23,7 @@ int main(int argc, char **argv)
 
     SYLAR_LOG_FMT_ERROR(logger, "test macro fmt error %s", "aa");   // 因为上面设置了级别为ERROR，所以这条日志可以被写入文件
 
-    auto l = sylar::LoggerMgr::GetInstance()->getLogger("xx");
+    auto l = sylar::LoggerMgr::GetInstance()->getLogger("xx");   // 测试日志管理器类
     SYLAR_LOG_INFO(l) << "xxx";
 
     return 0;
