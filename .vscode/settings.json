@@ -51,6 +51,10 @@
         "ctime": "cpp",
         "ratio": "cpp",
         "thread": "cpp",
-        "cinttypes": "cpp"
+        "cinttypes": "cpp",
+        "strstream": "cpp",
+        "set": "cpp",
+        "source_location": "cpp",
+        "valarray": "cpp"
     }
 }

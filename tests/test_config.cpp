@@ -46,9 +46,9 @@ void test_config()
 {
     SYLAR_LOG_INFO(SYLAR_LOG_ROOT()) << "before: " << g_int_value_config->getValue();
     SYLAR_LOG_INFO(SYLAR_LOG_ROOT()) << "before: " << g_float_value_config->toString();
-    auto &v = g_int_vec_value_config->getValue();
+    auto v = g_int_vec_value_config->getValue();
     for (auto &i : v) {
-       SYLAR_LOG_INFO(SYLAR_LOG_ROOT()) << "int_vec" << i;
+       SYLAR_LOG_INFO(SYLAR_LOG_ROOT()) << "before: " << "int_vec" << i;
     }
 
     YAML::Node root = YAML::LoadFile("/home/liangman/sylar/bin/conf/log.yml");
@@ -56,6 +56,10 @@ void test_config()
 
     SYLAR_LOG_INFO(SYLAR_LOG_ROOT()) << "after: " << g_int_value_config->getValue();
     SYLAR_LOG_INFO(SYLAR_LOG_ROOT()) << "after: " << g_float_value_config->toString();
+    v = g_int_vec_value_config->getValue();
+    for (auto &i : v) {
+       SYLAR_LOG_INFO(SYLAR_LOG_ROOT()) << "after: " << "int_vec" << i;
+    }
 }
 
 int main(int argc, char **argv)
