@@ -31,3 +31,42 @@ system:
         k: 130
         k2: 120
         k3: 110 
+
+class:
+    person:
+        name: sylar
+        age: 21
+        sex: true
+    map:
+        # 这样写转换会失败，这是数组形式了
+        # - name: sylar01
+        #   age: 21
+        #   sex: false
+        # - name: sylar02
+        #   age: 31
+        #   sex: true
+
+        # 写成map形式
+        sylar1:
+            name: sylar01
+            age: 21
+            sex: false
+        sylar2:
+            name: sylar02
+            age: 31
+            sex: true
+    vec_map:
+        k1:
+            - name: m1
+              age: 35
+              sex: false
+            - name: m2
+              age: 33
+              sex: true
+        k2:
+            - name: m21
+              age: 37
+              sex: false
+            - name: m22
+              age: 39
+              sex: true
