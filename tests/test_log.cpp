@@ -1,7 +1,7 @@
 #include <iostream>
-#include "../sylar/log.h"
-#include "../sylar/util.h"
-#include "../sylar/singleton.h"
+#include "sylar/log.h"
+#include "sylar/util.h"
+#include "sylar/singleton.h"
 
 int main(int argc, char **argv)
 {

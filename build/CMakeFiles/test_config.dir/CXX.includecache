@@ -6,7 +6,7 @@
 
 #IncludeRegexTransform: 
 
-/home/liangman/sylar/sylar/config.h
+../sylar/config.h
 memory
 -
 sstream
@@ -20,9 +20,9 @@ map
 exception
 -
 log.h
-/home/liangman/sylar/sylar/log.h
+../sylar/log.h
 
-/home/liangman/sylar/sylar/log.h
+../sylar/log.h
 string
 -
 stdint.h
@@ -40,15 +40,15 @@ vector
 map
 -
 util.h
-/home/liangman/sylar/sylar/util.h
+../sylar/util.h
 singleton.h
-/home/liangman/sylar/sylar/singleton.h
+../sylar/singleton.h
 
-/home/liangman/sylar/sylar/singleton.h
+../sylar/singleton.h
 memory
 -
 
-/home/liangman/sylar/sylar/util.h
+../sylar/util.h
 pthread.h
 -
 sys/types.h
@@ -61,8 +61,10 @@ stdint.h
 -
 
 /home/liangman/sylar/tests/test_config.cpp
-../sylar/config.h
-/home/liangman/sylar/sylar/config.h
-../sylar/log.h
-/home/liangman/sylar/sylar/log.h
+sylar/config.h
+/home/liangman/sylar/tests/sylar/config.h
+sylar/log.h
+/home/liangman/sylar/tests/sylar/log.h
+yaml-cpp/yaml.h
+-
 
