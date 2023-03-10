@@ -21,6 +21,16 @@ string
 -
 map
 -
+vector
+-
+list
+-
+set
+-
+unordered_map
+-
+unordered_set
+-
 exception
 -
 log.h
