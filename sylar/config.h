@@ -34,8 +34,23 @@ protected:
     std::string m_description;
 };
 
+// F -- from_type  F类型去转换成string类型
+// T -- to_type    string类型去转换成T类型
+// 通用的简单的类型转换
+template<class F, class T>
+class LexicalCast {
+public:
+    T operator()(const F &v) {
+        return boost::lexical_cast<T>(v);
+    }
+};
+
 // 定义具体的实现类，用一个模板类
-template<class T>
+// 支持序列化和反序列化，一种是转成string，另一种是把string转为我们要的类型
+// FromStr T operator()(const std::string &)
+// ToStr std::string operator()(const T &) 
+template<class T, class FromStr = LexicalCast<std::string, T>   // 类的特例化
+                , class ToStr = LexicalCast<T, std::string>>
 class ConfigVar : public ConfigVarBase {
 public:
     typedef std::shared_ptr<ConfigVar> ptr;
@@ -44,9 +59,11 @@ public:
         : ConfigVarBase(name, description), m_val(default_value) {
     }
 
+    // 外部的类型转成string类型进行解析
     std::string toString() override {
         try {
-            return boost::lexical_cast<std::string>(m_val);
+            // return boost::lexical_cast<std::string>(m_val);   // 简单版本，只支持简单类型  而对于基础类型的转换，由新定义的通用的基础类型转换类来做，这样不至于说加了复杂类型转换，简单类型转换就不支持了
+            return ToStr()(m_val);        // 复杂版本
         } catch (std::exception &e) {
             SYLAR_LOG_ERROR(SYLAR_LOG_ROOT()) << "ConfigVar::toString exception" << e.what()
                 << " convert: " << typeid(m_val).name() << " to string";
@@ -57,7 +74,8 @@ public:
     // 基础的类型转化
     bool fromString(const std::string &val) override {
         try {
-            m_val = boost::lexical_cast<T>(val);
+            // m_val = boost::lexical_cast<T>(val);   // 简单版本，只支持简单类型
+            setValue(FromStr()(val));        // 复杂版本
         } catch (std::exception &e) {
             SYLAR_LOG_ERROR(SYLAR_LOG_ROOT()) << "ConfigVar::toString exception" << e.what()
                 << " convert: string to " << typeid(m_val).name();

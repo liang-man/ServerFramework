@@ -2,11 +2,15 @@
 #include "sylar/log.h"
 #include <yaml-cpp/yaml.h>
 
+// 约定好的配置参数，在下面test_config()函数里会加载yml配置文件，解析的过程中会查找相应的约定配置，然后进行覆盖
 sylar::ConfigVar<int>::ptr g_int_value_config = 
     sylar::Config::Lookup("system.port", (int)8080, "system port");
 
 sylar::ConfigVar<float>::ptr g_float_value_config = 
     sylar::Config::Lookup("system.value", (float)10.2f, "system value");   // 跟P11最后输出结果不一样，就是这里字符串内容不一致，我自己写成了“system.port”
+
+sylar::ConfigVar<std::vector<int>>::ptr g_int_vec_value_config = 
+    sylar::Config::Lookup("system.int_vec", std::vector<int>{1, 2}, "system int vec");
 
 void print_yaml(const YAML::Node &node, int level)
 {   
@@ -42,6 +46,10 @@ void test_config()
 {
     SYLAR_LOG_INFO(SYLAR_LOG_ROOT()) << "before: " << g_int_value_config->getValue();
     SYLAR_LOG_INFO(SYLAR_LOG_ROOT()) << "before: " << g_float_value_config->toString();
+    auto &v = g_int_vec_value_config->getValue();
+    for (auto &i : v) {
+       SYLAR_LOG_INFO(SYLAR_LOG_ROOT()) << "int_vec" << i;
+    }
 
     YAML::Node root = YAML::LoadFile("/home/liangman/sylar/bin/conf/log.yml");
     sylar::Config::LoadFromYaml(root);

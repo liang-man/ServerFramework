@@ -28,18 +28,6 @@ log.h
 yaml-cpp/yaml.h
 -
 
-/home/liangman/sylar/sylar/log.cpp
-log.h
-/home/liangman/sylar/sylar/log.h
-iostream
--
-functional
--
-time.h
--
-cstdarg
--
-
 /home/liangman/sylar/sylar/log.h
 string
 -
@@ -65,10 +53,6 @@ singleton.h
 /home/liangman/sylar/sylar/singleton.h
 memory
 -
-
-/home/liangman/sylar/sylar/util.cpp
-util.h
-/home/liangman/sylar/sylar/util.h
 
 /home/liangman/sylar/sylar/util.h
 pthread.h
