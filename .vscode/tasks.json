@@ -28,7 +28,7 @@
             "dependsOrder": "sequence",   //按列出的顺序执行依赖项
             "dependsOn": [
                 "camke",
-                "make"
+                "make -j4"
             ]
         }
     ],

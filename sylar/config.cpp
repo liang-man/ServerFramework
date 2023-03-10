@@ -14,14 +14,17 @@ ConfigVarBase::ptr Config::LookupBase(const std::string &name)
 // A:
 //   B: 10
 //   C: str
+// 解析成树会不会更好？
 static void ListAllMember(const std::string &prefix, 
                           const YAML::Node &node,
                           std::list<std::pair<std::string, const YAML::Node>> &output)
 {
+    // 如果是非法字符
     if (prefix.find_first_not_of("abcdefggijklmnopqrstuvwxyz._012345678") != std::string::npos) {
         SYLAR_LOG_ERROR(SYLAR_LOG_ROOT()) << "Config invaild name: " << prefix << " : " << node;
         return;   
     }
+    // 如果不是非法字符
     output.push_back(std::make_pair(prefix, node));
     if (node.IsMap()) {
         for (auto it = node.begin(); it != node.end(); ++it) {
