@@ -3,7 +3,7 @@
 
 #include <memory>  // 智能指针
 #include <sstream> // 序列化
-#include <boost/lexical_cast.hpp>   // 内存转化
+#include <boost/lexical_cast.hpp>   // 内存转化  boost库的安装见收藏夹，库默认安装在/usr/local/include中，这样就可以使用#include <boost/...>了
 #include <string>
 #include <map>
 #include <exception>
@@ -18,7 +18,7 @@ public:
     ConfigVarBase(const std::string &name, const std::string &description = "")
         : m_name(name), m_description(description) {
     }
-    virtual ~ConfigVarBase(); {}
+    virtual ~ConfigVarBase() {}
 
     const std::string &getName() const { return m_name; }
     const std::string &getDescription() const { return m_description; }
@@ -28,13 +28,13 @@ public:
 protected:
     std::string m_name;
     std::string m_description;
-}
+};
 
 // 定义具体的实现类，用一个模板类
 template<class T>
 class ConfigVar : public ConfigVarBase {
 public:
-    typedef std::shared_ptr<ConfigVarBase> ptr;
+    typedef std::shared_ptr<ConfigVar> ptr;
 
     ConfigVar(const std::string &name, const T &default_value, const std::string &description = "")
         : ConfigVarBase(name, description), m_val(default_value) {
@@ -60,6 +60,9 @@ public:
         }
         return false;
     } 
+
+    const T getValue() const { return m_val; }
+    void setValue(const T &val) { m_val = val; }
 private:
     T m_val;
 };
@@ -86,6 +89,8 @@ public:
 
         typename ConfigVar<T>::ptr v(new ConfigVar<T>(name, default_vale, description));
         s_datas[name] = v;
+
+        return v;
     }
 
     template<class T>
@@ -98,7 +103,7 @@ public:
     }
 private:
     static ConfigVarMap s_datas;
-}
+};
 
 } // namespace syla 
 

@@ -10,6 +10,7 @@
 #include <fstream>
 #include <vector>
 #include <map>
+#include "util.h"
 #include "singleton.h"
 
 // 为了方便日志的使用
