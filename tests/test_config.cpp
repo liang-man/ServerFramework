@@ -9,6 +9,10 @@ sylar::ConfigVar<int>::ptr g_int_value_config =
 sylar::ConfigVar<float>::ptr g_float_value_config = 
     sylar::Config::Lookup("system.value", (float)10.2f, "system value");   // 跟P11最后输出结果不一样，就是这里字符串内容不一致，我自己写成了“system.port”
 
+// 测试同名但类型不同不会报错的问题
+sylar::ConfigVar<float>::ptr g_int_valuex_config = 
+    sylar::Config::Lookup("system.port", (float)8080, "system port"); 
+
 sylar::ConfigVar<std::vector<int>>::ptr g_int_vec_value_config = 
     sylar::Config::Lookup("system.int_vec", std::vector<int>{1, 2}, "system int vec");
 

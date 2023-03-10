@@ -34,6 +34,7 @@ public:
 
     virtual std::string toString() = 0;
     virtual bool fromString(const std::string &val) = 0;   // 用参数初始化它自己的成员
+    virtual std::string getTypeName() const = 0;
 protected:
     std::string m_name;
     std::string m_description;
@@ -276,6 +277,7 @@ public:
 
     const T getValue() const { return m_val; }
     void setValue(const T &val) { m_val = val; }
+    std::string getTypeName() const override { return typeid(T).name(); }
 private:
     T m_val;
 };
@@ -288,11 +290,26 @@ public:
     template<class T>
     static typename ConfigVar<T>::ptr Lookup(const std::string &name, const T &default_vale,
             const std::string &description = "") {
-        auto tmp = Lookup<T>(name);
-        if (tmp) {
-            SYLAR_LOG_INFO(SYLAR_LOG_ROOT()) << "Lookup name=" << name << " exists";
-            return tmp;
+        ////////////////对下面注释的改变//////////////
+        // 这样做了之后，有问题就会爆出这个问题
+        auto it = s_datas.find(name);
+        if (it != s_datas.end()) {
+            auto tmp = std::dynamic_pointer_cast<ConfigVar<T>>(it->second);  // 利用dynamic_pointer_cast转换类型时，如果同名key但值类型不同，转换会失败，返回nullptr
+            if (tmp) {
+                SYLAR_LOG_INFO(SYLAR_LOG_ROOT()) << "Lookup name=" << name << " exists";
+                return tmp;
+            } else {
+                SYLAR_LOG_ERROR(SYLAR_LOG_ROOT()) << "Lookup name=" << name << " exists but type not "
+                        << typeid(T).name() << " real_type=" << it->second->getTypeName()
+                        << " " << it->second->toString();
+                return nullptr;
+            }
         }
+        // auto tmp = Lookup<T>(name);
+        // if (tmp) {
+        //     SYLAR_LOG_INFO(SYLAR_LOG_ROOT()) << "Lookup name=" << name << " exists";
+        //     return tmp;
+        // }
 
         if (name.find_first_not_of("abcdefggijklmnopqrstuvwxyz._012345678")
                 != std::string::npos) {
