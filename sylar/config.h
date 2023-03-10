@@ -8,6 +8,7 @@
 #include <map>
 #include <exception>
 #include "log.h"
+#include <yaml-cpp/yaml.h>
 
 namespace sylar {
 
@@ -15,8 +16,11 @@ namespace sylar {
 class ConfigVarBase {
 public:
     typedef std::shared_ptr<ConfigVarBase> ptr;
+    // 定义的时候直接转成小写，这样就只有小写没有大写
     ConfigVarBase(const std::string &name, const std::string &description = "")
-        : m_name(name), m_description(description) {
+            : m_name(name)
+            , m_description(description) {
+        std::transform(m_name.begin(), m_name.end(), m_name.begin(), ::tolower);
     }
     virtual ~ConfigVarBase() {}
 
@@ -81,7 +85,7 @@ public:
             return tmp;
         }
 
-        if (name.find_first_not_of("abcdefggijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ._012345678")
+        if (name.find_first_not_of("abcdefggijklmnopqrstuvwxyz._012345678")
                 != std::string::npos) {
             SYLAR_LOG_ERROR(SYLAR_LOG_ROOT()) << "Lookup name invalid " << name;
             throw std::invalid_argument(name);
@@ -101,6 +105,9 @@ public:
         }
         return std::dynamic_pointer_cast<ConfigVar<T>>(it->second);
     }
+
+    static void LoadFromYaml(const YAML::Node &root);
+    static ConfigVarBase::ptr LookupBase(const std::string &name);
 private:
     static ConfigVarMap s_datas;
 };

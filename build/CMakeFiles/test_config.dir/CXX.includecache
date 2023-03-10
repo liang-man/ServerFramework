@@ -21,6 +21,8 @@ exception
 -
 log.h
 ../sylar/log.h
+yaml-cpp/yaml.h
+-
 
 ../sylar/log.h
 string

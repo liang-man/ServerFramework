@@ -10,17 +10,17 @@ sylar::ConfigVar<float>::ptr g_int_float_config =
 
 void print_yaml(const YAML::Node &node, int level)
 {   
-    if (node.IsScalar()) {
+    if (node.IsScalar()) {          // 如果yml是简单类型
         SYLAR_LOG_INFO(SYLAR_LOG_ROOT()) << std::string(level * 4, ' ') << node.Scalar() << " - " << node.Type();
     } else  if (node.IsNull()) {
         SYLAR_LOG_INFO(SYLAR_LOG_ROOT()) << std::string(level * 4, ' ') << "NULL - " << node.Type() << " - " << level;
-    } else if (node.IsMap()) {
+    } else if (node.IsMap()) {      // 如果yml是map结构
         for (auto it = node.begin(); it != node.end(); ++it) {
             SYLAR_LOG_INFO(SYLAR_LOG_ROOT()) << std::string(level * 4, ' ') 
                     << it->first << " - " << it->second.Type() << " - " << level;
             print_yaml(it->second, level + 1);
         }
-    } else if (node.IsSequence()) {
+    } else if (node.IsSequence()) {  // 如果yml是sequence
         for (size_t i = 0; i < node.size(); ++i) {
             SYLAR_LOG_INFO(SYLAR_LOG_ROOT()) << std::string(level * 4, ' ') << i << " - " << node[i].Type() << " - " << level;
             print_yaml(node[i], level + 1);
@@ -38,12 +38,22 @@ void test_yaml()
     // SYLAR_LOG_INFO(SYLAR_LOG_ROOT()) << root;
 }
 
+void test_config()
+{
+    SYLAR_LOG_INFO(SYLAR_LOG_ROOT()) << "before: " << g_int_value_config->getValue();
+    SYLAR_LOG_INFO(SYLAR_LOG_ROOT()) << "before: " << g_int_value_config->toString();
+
+    YAML::Node root = YAML::LoadFile("/home/liangman/sylar/bin/conf/log.yml");
+    sylar::Config::LoadFromYaml(root);
+
+    SYLAR_LOG_INFO(SYLAR_LOG_ROOT()) << "after: " << g_int_value_config->getValue();
+    SYLAR_LOG_INFO(SYLAR_LOG_ROOT()) << "after: " << g_int_value_config->toString();
+}
+
 int main(int argc, char **argv)
 {
-    SYLAR_LOG_INFO(SYLAR_LOG_ROOT()) << g_int_value_config->getValue();
-    SYLAR_LOG_INFO(SYLAR_LOG_ROOT()) << g_int_float_config->toString();
-
-    test_yaml();
+    // test_yaml();
+    test_config();
 
     return 0;
 }

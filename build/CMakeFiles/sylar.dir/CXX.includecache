@@ -25,17 +25,7 @@ exception
 -
 log.h
 /home/liangman/sylar/sylar/log.h
-
-/home/liangman/sylar/sylar/log.cpp
-log.h
-/home/liangman/sylar/sylar/log.h
-iostream
--
-functional
--
-time.h
--
-cstdarg
+yaml-cpp/yaml.h
 -
 
 /home/liangman/sylar/sylar/log.h
@@ -63,10 +53,6 @@ singleton.h
 /home/liangman/sylar/sylar/singleton.h
 memory
 -
-
-/home/liangman/sylar/sylar/util.cpp
-util.h
-/home/liangman/sylar/sylar/util.h
 
 /home/liangman/sylar/sylar/util.h
 pthread.h
