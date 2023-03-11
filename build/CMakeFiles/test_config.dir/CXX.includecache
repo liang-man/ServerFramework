@@ -33,6 +33,8 @@ log.h
 ../sylar/log.h
 yaml-cpp/yaml.h
 -
+functional
+-
 
 ../sylar/log.h
 string

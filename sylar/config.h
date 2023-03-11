@@ -14,6 +14,7 @@
 #include <exception>
 #include "log.h"
 #include <yaml-cpp/yaml.h>
+#include <functional>
 
 namespace sylar {
 
@@ -246,6 +247,12 @@ template<class T, class FromStr = LexicalCast<std::string, T>   // 类的特例�
 class ConfigVar : public ConfigVarBase {
 public:
     typedef std::shared_ptr<ConfigVar> ptr;
+    /*
+     * c++11里function很好用，可以封装成指针、lambda格式、以及成员或者伪装，把一个函数签名不一样的给包装成一个满足需要的接口
+     * 与智能指针一样，蛮有必要去了解一下
+     * 当一个配置更改的时候，我们应该通知到，让他知道原来的值是什么，新值是什么，然后基于原来的值做一些清理，根据新的值做一些修改
+    */
+    typedef std::function<void (const T &old_value, const T &new_value)> on_change_callback;
 
     ConfigVar(const std::string &name, const T &default_value, const std::string &description = "")
         : ConfigVarBase(name, description), m_val(default_value) {
@@ -276,10 +283,46 @@ public:
     } 
 
     const T getValue() const { return m_val; }
-    void setValue(const T &val) { m_val = val; }
+    // void setValue(const T &val) { m_val = val; }
+    // 我们要通知变化，比如100项配置里，我们只改了1项，那么没变化的没必要让用户知道，所以要知道原值和新值是否发生了变化
+    void setValue(const T &val) { 
+        if (val == m_val) {
+            return;
+        }
+        for (auto &i : m_cbs) {
+            i.second(m_val, val);
+        }
+        m_val = val;
+    }
     std::string getTypeName() const override { return typeid(T).name(); }
+
+    // 监听
+    void addListener(uint64_t key, on_change_callback cb) {
+        m_cbs[key] = cb;
+    }
+
+    // 删除
+    void delListener(uint64_t key) {
+        m_cbs.erase(key);
+    }
+
+    on_change_callback getListener(uint64_t key) { 
+        auto it = m_cbs.find(key);
+        return it == m_cbs.end() ? nullptr : it->second; 
+    } 
+
+    // 清空
+    void clearListener() {
+        m_cbs.clear();
+    }
 private:
-    T m_val;
+    T m_val; 
+
+    // 变更回调函数组
+    // 为什么要用map？因为function没有比较函数，如果我们想在vector里判断是否是同一个function，是没法判断的，因为没有比较函数
+    // 所以要用map加一个关键字标签key(uint64_t)，要求唯一，一般可以用hash值
+    // 为此还需要增加监听
+    std::map<uint64_t, on_change_callback> m_cbs;
 };
 
 // 实现创建和查找日志
