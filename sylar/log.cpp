@@ -27,6 +27,21 @@ const char *LogLevel::ToString(LogLevel::Level level)
     return "UNKNOW";
 }
 
+LogLevel::Level LogLevel::FromString(const std::string &str)
+{
+#define XX(name) \
+    if (str == #name) { \
+        return LogLevel::name; \
+    }
+    XX(DEBUG);
+    XX(INFO);
+    XX(WARN);
+    XX(ERROR);
+    XX(FATAL);
+    return LogLevel::UNKNOW;
+#undef XX
+}
+
 LogEventWrap::LogEventWrap(LogEvent::ptr e) : m_event(e)
 {
 
@@ -201,6 +216,28 @@ Logger::Logger(const std::string &name) : m_name(name), m_level(LogLevel::DEBUG)
     // }
 }
 
+void Logger::setFormatter(LogFormatter::ptr val)
+{
+    m_formatter = val;
+}
+
+void Logger::setFormatter(std::string &val)
+{
+    LogFormatter::ptr new_vale(new LogFormatter(val));
+    if (new_vale->isError()) {
+        std::cout << "Logger setFormatter name=" << m_name 
+                  << " value=" << val << " invalid formatter"
+                  << std::endl;
+        return;
+    }
+    m_formatter = new_vale;
+}
+
+LogFormatter::ptr Logger::getFormatter()
+{
+    return m_formatter;
+}
+
 void Logger::log(LogLevel::Level level, LogEvent::ptr event)
 {
     if (level >= m_level) {     // 为什么要大于等于？
@@ -259,6 +296,11 @@ void Logger::delAppender(LogAppender::ptr appender)
             break;
         }
     }
+}
+
+void Logger::clearAppenders()
+{
+    m_appenders.clear();
 }
 
 FileLogAppender::FileLogAppender(const std::string &filename) : m_filename(filename) 
@@ -375,6 +417,7 @@ void LogFormatter::init()
         } else if (fmt_status == 1) {
             std::cout << "pattern parse error: " << m_pattern << " - " << m_pattern.substr(i) << std::endl;
             vec.push_back(std::make_tuple("<<pattern_error>>", fmt, 0)); 
+            m_isError = true;
         } 
     }
 
@@ -406,6 +449,7 @@ void LogFormatter::init()
             auto it = s_format_items.find(std::get<0>(i));
             if (it == s_format_items.end()) {
                 m_items.push_back(FormatItem::ptr(new StringFormatItem("<<error_format %" + std::get<0>(i) + ">>")));
+                m_isError = true;
             } else {
                 m_items.push_back(it->second(std::get<1>(i)));
             }
@@ -440,7 +484,6 @@ Logger::ptr LoggerManager::getLogger(const std::string &name)
     return logger;
 }
 
-// 为什么要定义这两个结构体？为什么不用偏特化？
 struct LogAppenderDefine {
     int type = 0;   // 1.file 2.Stdout
     LogLevel::Level level = LogLevel::UNKNOW;
@@ -473,15 +516,124 @@ struct LogDefine {
     }
 };
 
+// 因为自定义了类，所以还要对其进行偏特化
+template<>
+class LexicalCast<std::string, std::set<LogDefine>> {
+public:
+    std::set<LogDefine> operator()(const std::string &v) {
+        YAML::Node node = YAML::Load(v);
+        typename std::set<LogDefine> vec;
+        for (size_t i = 0; i < node.size(); ++i) {
+            auto n = node[i];
+            if (!n["name"].IsDefined()) {
+                std::cout << "log config error: name is null, " << n << std::endl;
+                continue;
+            }
+            LogDefine ld;
+            ld.name = n["name"].as<std::string>();
+            ld.level = LogLevel::FromString(n["level"].IsDefined() ? n["level"].as<std::string>() : "");
+            if (n["formatter"].IsDefined()) {
+                ld.formatter = n["formatter"].as<std::string>();
+            }
+            if (n["appenders"].IsDefined()) {
+                for (size_t j = 0; j < n["appenders"].size(); ++j) {
+                    auto a = n["appenders"][j];
+                    if (!a["type"].IsDefined()) {
+                        std::cout << "log config error: appender type is null, " << a << std::endl;
+                        continue;
+                    }
+                    std::string type = a["type"].as<std::string>();
+                    LogAppenderDefine lad;
+                    if (type == "FileLogAppender") {
+                        lad.type = 1;
+                        if (!a["file"].IsDefined()) {
+                            std::cout << "log config error: fileappender file is null" << std::endl;
+                            continue;
+                        }
+                        lad.file = a["file"].as<std::string>();
+                        if (a["formatter"].IsDefined()) {
+                            lad.formatter = a["formatter"].as<std::string>();
+                        }
+                    } else if (type == "StdoutLogAppender") {
+                        lad.type = 2;
+                    } else {
+                        std::cout << "log config error: appender type is invalid" << std::endl;
+                        continue;
+                    }
+
+                    ld.appenders.push_back(lad);
+                }
+            }
+            vec.insert(ld);
+        }
+        return vec;
+    }
+};
+
+template<>
+class LexicalCast<std::vector<T>, std::string> {
+public:
+    std::string operator()(const std::vector<T> &v) {
+        YAML::Node node;
+        for (auto &i : v) {
+            node.push_back(YAML::Load(LexicalCast<T, std::string>()(i)));
+        }
+        std::stringstream ss;
+        ss << node;
+        return ss.str();
+    }
+};
+
 sylar::ConfigVar<std::set<LogDefine>>::ptr g_log_defines = 
     sylar::Config::Lookup("logs", std::set<LogDefine>(), "logs config");
 
 // 冷知识：如何在main函数之前和之后执行一些操作？一般全局对象会在main函数之前构造，所以一定会触发这个对象的构造事件
-// 功能：在main函数之前使用一个事件
+// 功能：在main函数之前初始化一个事件，当有变化的时候会通过这个事件来触发
 struct LogIniter {
     LogIniter() {
         g_log_defines->addListener(0xF1E231, [](const std::set<LogDefine> &old_value, const std::set<LogDefine> &new_value) {
+            // 新增
+            SYLAR_LOG_INFO(SYLAR_LOG_ROOT()) << "on_logger_conf_changed";
+            for (auto &i : new_value) {
+                auto it = old_value.find(i);    // set的find是按照我们自己重载的<来判断的
+                Logger::ptr logger;
+                if (it == old_value.end()) {    // 不存在
+                    // 新增logger
+                    logger.reset(new Logger(i.name));
+                } else {
+                    if (!(i == *it)) {          // 不等于
+                        // 修改logger
+                        logger = SYLAR_LOG_NAME(i.name);
+                    }
+                }
 
+                logger->setLevel(i.level);
+                if (!i.formatter.empty()) {
+                    logger->setFormatter(i.formatter);
+                }
+
+                logger->clearAppenders();
+                for (auto &a : i.appenders) {
+                    LogAppender::ptr ap;
+                    if (a.type == 1) {
+                        ap.reset(new FileLogAppender(i.file));
+                    } else if (a.type == 2) {
+                        ap.reset(new StdoutLogAppender);
+                    }
+                    ap->setLevel(a.level);
+                    logger->addAppender(ap);
+                }
+            }
+            // 删除
+            for (auto &i : old_value) {
+                auto it = new_value.find(i);
+                if (it == new_value.end()) {
+                    // 删除logger 不能真删除，因为原来静态化的一些对象可能就会有问题
+                    Logger::ptr logger = SYLAR_LOG_NAME(i.name);
+                    logger->setLevel((LogLevel::Level)100);   // 首先把日志级别设的很高
+                    logger->clearAppenders();                 // 接着清空appenders，这样默认就会用root输出
+                }
+            }
         });
     }
 };

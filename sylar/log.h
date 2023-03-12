@@ -61,6 +61,7 @@ public:
     };
 
     static const char *ToString(LogLevel::Level level);
+    static LogLevel::Level FromString(const std::string &str); 
 };
 
 // 每个日志生成出来的时候，把它定义成一个logevent，它所需要的属性、字段都放在里面
@@ -118,6 +119,7 @@ public:
     // 把日志输出成我们设定的固定化格式
     std::string format(std::shared_ptr<Logger> logger, LogLevel::Level level, LogEvent::ptr event);
     void init();
+    bool isError() const { return m_isError; }
 public:
     class FormatItem {
     public:
@@ -132,6 +134,7 @@ public:
 private:
     std::string m_pattern;
     std::vector<FormatItem::ptr> m_items;
+    bool m_isError = false;
 };
 
 // 日志输出地
@@ -171,10 +174,15 @@ public:
 
     void addAppender(LogAppender::ptr appender);
     void delAppender(LogAppender::ptr appender);
+    void clearAppenders();
     LogLevel::Level getLevel() const { return m_level; }
     void setLevel(LogLevel::Level val) { m_level = val; }
 
     const std::string &getName() const { return m_name; }
+
+    void setFormatter(LogFormatter::ptr val);
+    void setFormatter(std::string &val);
+    LogFormatter::ptr getFormatter();
 private:
     std::string m_name;        // 日志名称
     LogLevel::Level m_level;   // 定义日志器的日志级别

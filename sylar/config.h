@@ -335,8 +335,8 @@ public:
             const std::string &description = "") {
         ////////////////对下面注释的改变//////////////
         // 这样做了之后，有问题就会爆出这个问题
-        auto it = s_datas.find(name);
-        if (it != s_datas.end()) {
+        auto it = GetDatas().find(name);
+        if (it != GetDatas().end()) {
             auto tmp = std::dynamic_pointer_cast<ConfigVar<T>>(it->second);  // 利用dynamic_pointer_cast转换类型时，如果同名key但值类型不同，转换会失败，返回nullptr
             if (tmp) {
                 SYLAR_LOG_INFO(SYLAR_LOG_ROOT()) << "Lookup name=" << name << " exists";
@@ -361,15 +361,15 @@ public:
         }
 
         typename ConfigVar<T>::ptr v(new ConfigVar<T>(name, default_vale, description));
-        s_datas[name] = v;
+        GetDatas()[name] = v;
 
         return v;
     }
 
     template<class T>
     static typename ConfigVar<T>::ptr Lookup(const std::string &name) {
-        auto it = s_datas.find(name);
-        if (it == s_datas.end()) {
+        auto it = GetDatas().find(name);
+        if (it == GetDatas().end()) {
             return nullptr;
         }
         return std::dynamic_pointer_cast<ConfigVar<T>>(it->second);
@@ -378,7 +378,13 @@ public:
     static void LoadFromYaml(const YAML::Node &root);
     static ConfigVarBase::ptr LookupBase(const std::string &name);
 private:
-    static ConfigVarMap s_datas;
+    // static ConfigVarMap s_datas;   // 存放config的所有参数 但这样写会导致core，因为调用Lookup()时，这个静态成员s_datas不一定先初始化了，就会导致s_datas在内存中的数据结构是有问题的
+    // 原本s_datas初始化的位置是在config.cpp里，用全局对象的形式
+    // 解决办法就是用一个静态函数调用局部的静态对象，这样在使用s_datas前就一定会被先初始化，这样就解决了静态成员初始化顺序导致的一些问题
+    static ConfigVarMap &GetDatas() {
+        static ConfigVarMap s_datas;
+        return s_datas;
+    }
 };
 
 } // namespace syla 
