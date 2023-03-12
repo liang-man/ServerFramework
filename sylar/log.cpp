@@ -29,15 +29,22 @@ const char *LogLevel::ToString(LogLevel::Level level)
 
 LogLevel::Level LogLevel::FromString(const std::string &str)
 {
-#define XX(name) \
-    if (str == #name) { \
-        return LogLevel::name; \
+#define XX(level, v) \
+    if (str == #v) { \
+        return LogLevel::level; \
     }
-    XX(DEBUG);
-    XX(INFO);
-    XX(WARN);
-    XX(ERROR);
-    XX(FATAL);
+    XX(DEBUG, debug);
+    XX(INFO, info);
+    XX(WARN, warn);
+    XX(ERROR, error);
+    XX(FATAL, fatal);
+
+    XX(DEBUG, DEBUG);
+    XX(INFO, INFO);
+    XX(WARN, WARN);
+    XX(ERROR, ERROR);
+    XX(FATAL, FATAL);
+
     return LogLevel::UNKNOW;
 #undef XX
 }
@@ -238,6 +245,24 @@ LogFormatter::ptr Logger::getFormatter()
     return m_formatter;
 }
 
+std::string Logger::toYamlString()
+{
+    YAML::Node node;
+    node["name"] = m_name;
+    if (m_level != LogLevel::UNKNOW) {
+        node["level"] = LogLevel::ToString(m_level);
+    }
+    if (m_formatter) {
+        node["formatter"] = m_formatter->getPattern();
+    }
+    for (auto &i : m_appenders) {
+        node["appenders"].push_back(YAML::Load(i->toYamlString()));
+    }
+    std::stringstream ss;
+    ss << node;
+    return ss.str();
+}
+
 void Logger::log(LogLevel::Level level, LogEvent::ptr event)
 {
     if (level >= m_level) {     // 为什么要大于等于？
@@ -315,6 +340,22 @@ void FileLogAppender::log(std::shared_ptr<Logger> logger, LogLevel::Level level,
     }
 }
 
+std::string FileLogAppender::toYamlString()
+{
+    YAML::Node node;
+    node["type"] = "FileLogAppender";
+    node["file"] = m_filename;
+    if (m_level != LogLevel::UNKNOW) {
+        node["level"] = LogLevel::ToString(m_level);
+    }
+    if (m_formatter) {
+        node["formatter"] = m_formatter->getPattern();
+    }
+    std::stringstream ss;
+    ss << node;
+    return ss.str();
+}
+
 bool FileLogAppender::reopen()
 {
     if (m_filestream) {
@@ -329,6 +370,21 @@ void StdoutLogAppender::log(std::shared_ptr<Logger> logger, LogLevel::Level leve
     if (level >= m_level) {
         std::cout << m_formatter->format(logger, level, event);
     }
+}
+
+std::string StdoutLogAppender::toYamlString()
+{
+    YAML::Node node;
+    node["type"] = "StdoutLogAppender";
+    if (m_level != LogLevel::UNKNOW) {
+        node["level"] = LogLevel::ToString(m_level);
+    }
+    if (m_formatter) {
+        node["formatter"] = m_formatter->getPattern();
+    }
+    std::stringstream ss;
+    ss << node;
+    return ss.str();
 }
 
 LogFormatter::LogFormatter(const std::string &pattern) : m_pattern(pattern)
@@ -466,6 +522,8 @@ LoggerManager::LoggerManager()
 
     m_root->addAppender(LogAppender::ptr(new StdoutLogAppender));
 
+    m_loggers[m_root->m_name] = m_root;
+
     init();
 }
 
@@ -580,9 +638,11 @@ public:
         for (auto &i : v) {
             YAML::Node n;
             n["name"] = i.name;
-            n["level"] = LogLevel::ToString(i.level);
+            if (i.level != LogLevel::UNKNOW) {     // 等于UNKNOW就不用打了
+                n["level"] = LogLevel::ToString(i.level);
+            }
             if (i.formatter.empty()) {
-                n["level"] = i.formatter;
+                n["formatter"] = i.formatter;
             }
             for (auto &a : i.appenders) {
                 YAML::Node na;
@@ -592,7 +652,9 @@ public:
                 } else if (a.type == 2) {
                     na["type"] = "StdoutLogAppender";
                 }
-                na["level"] = LogLevel::ToString(a.level);
+                if (i.level != LogLevel::UNKNOW) {   // 等于UNKNOW就不用打了
+                    n["level"] = LogLevel::ToString(i.level);
+                }
                 if (!a.formatter.empty()) {
                     na["formatter"] = a.formatter;
                 }
@@ -621,7 +683,8 @@ struct LogIniter {
                 Logger::ptr logger;
                 if (it == old_value.end()) {    // 不存在
                     // 新增logger
-                    logger.reset(new Logger(i.name));
+                    // logger.reset(new Logger(i.name));
+                    logger = SYLAR_LOG_NAME(i.name);
                 } else {
                     if (!(i == *it)) {          // 不等于
                         // 修改logger
@@ -662,6 +725,17 @@ struct LogIniter {
 };
 
 static LogIniter __log_init;   // 这样在构建__log_init的时候，会调用它自己的构造函数，这是main函数之前的
+
+std::string LoggerManager::toYamlString()
+{
+    YAML::Node node;
+    for (auto &i : m_loggers) {
+        node.push_back(YAML::Load(i.second->toYamlString()));
+    }
+    std::stringstream ss;
+    ss << node;
+    return ss.str();
+}
 
 void LoggerManager::init()
 {

@@ -1,6 +1,7 @@
 #include "sylar/config.h"
 #include "sylar/log.h"
 #include <yaml-cpp/yaml.h>
+#include <iostream>
 
 // 约定好的配置参数，在下面test_config()函数里会加载yml配置文件，解析的过程中会查找相应的约定配置，然后进行覆盖
 sylar::ConfigVar<int>::ptr g_int_value_config = 
@@ -203,11 +204,26 @@ void test_class()
     SYLAR_LOG_INFO(SYLAR_LOG_ROOT()) << "after: " << g_person_vec_map->toString();
 }
 
+void test_log()
+{
+    static sylar::Logger::ptr system_log = SYLAR_LOG_NAME("system");
+    SYLAR_LOG_INFO(system_log) << "hello system" << std::endl;
+    std::cout << sylar::LoggerMgr::GetInstance()->toYamlString() << std::endl;
+    YAML::Node root = YAML::LoadFile("/home/liangman/sylar/bin/conf/log_conf.yml");
+    sylar::Config::LoadFromYaml(root);
+    std::cout << "=================" << std::endl;
+    std::cout << sylar::LoggerMgr::GetInstance()->toYamlString() << std::endl;
+    std::cout << "=================" << std::endl;
+    std::cout << root <<std::endl;
+    SYLAR_LOG_INFO(system_log) << "hello system" << std::endl;
+}
+
 int main(int argc, char **argv)
 {
     // test_yaml();
     // test_config();
-    test_class();
+    // test_class();
+    test_log();
 
     return 0;
 }
