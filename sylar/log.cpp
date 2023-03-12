@@ -3,6 +3,7 @@
 #include <functional>
 #include <time.h>
 #include <cstdarg>
+#include "config.h"
 
 namespace sylar {
 
@@ -96,7 +97,9 @@ class NameFormatItem : public LogFormatter::FormatItem {
 public:
     NameFormatItem(const std::string &str = "") {}
     void format(std::ostream &os, std::shared_ptr<Logger> logger, LogLevel::Level level, LogEvent::ptr event) override {
-        os << logger->getName();
+        // os << logger->getName();
+        // 针对开发笔记77-82行的问题所做的改变
+        os << event->getLogger()->getName();   // event里的logger才是最原始的logger
     }
 };
 
@@ -190,14 +193,27 @@ LogEvent::LogEvent(std::shared_ptr<Logger> logger, LogLevel::Level level, const 
 Logger::Logger(const std::string &name) : m_name(name), m_level(LogLevel::DEBUG) 
 {
     m_formatter.reset(new LogFormatter("%d{%Y-%m-%d %H:%M:%S}%T%t%T%F%T[%p]%T[%c]%T%f:%l%T%m%n"));
+
+    // 加这个的作用是如果没有任何的配置，那么默认也可以输出到控制台
+    // 但其实不用加，在LoggerManager类的初始化里已经加了
+    // if (name == "root") {
+    //     m_appenders.push_back(LogAppender::ptr(new StdoutLogAppender));
+    // }
 }
 
 void Logger::log(LogLevel::Level level, LogEvent::ptr event)
 {
     if (level >= m_level) {     // 为什么要大于等于？
         auto self = shared_from_this();
-        for (auto &i : m_appenders) {
-            i->log(self, level, event);
+        // for (auto &i : m_appenders) {
+        //     i->log(self, level, event);
+        // }
+        if (!m_appenders.empty()) {     // 针对开发笔记77-82行的问题所做的改变
+            for (auto &i : m_appenders) {
+                i->log(self, level, event);
+            }
+        } else if (m_root) {
+            m_root->log(level, event);
         }
     }
 }
@@ -405,12 +421,76 @@ LoggerManager::LoggerManager()
     m_root.reset(new Logger);
 
     m_root->addAppender(LogAppender::ptr(new StdoutLogAppender));
+
+    init();
 }
 
 Logger::ptr LoggerManager::getLogger(const std::string &name)
 {
     auto it = m_loggers.find(name);
-    return it == m_loggers.end() ? m_root : it->second;
+    // return it == m_loggers.end() ? m_root : it->second; 
+
+    // 针对开发笔记77-82行的问题所做的改变  
+    if (it != m_loggers.end()) {    // 有个副作用，如果这个looger不存在，会创建一个logger并返回
+        return it->second;
+    }
+    Logger::ptr logger(new Logger(name));
+    logger->m_root = m_root;
+    m_loggers[name] = logger;
+    return logger;
+}
+
+// 为什么要定义这两个结构体？为什么不用偏特化？
+struct LogAppenderDefine {
+    int type = 0;   // 1.file 2.Stdout
+    LogLevel::Level level = LogLevel::UNKNOW;
+    std::string formatter;
+    std::string file;
+
+    bool operator==(const LogAppenderDefine& oth) const {
+        return type == oth.type
+            && level == oth.level
+            && formatter == oth.formatter
+            && file == oth.file;
+    }
+};
+
+struct LogDefine {
+    std::string name;
+    LogLevel::Level level = LogLevel::UNKNOW;
+    std::string formatter;
+    std::vector<LogAppenderDefine> appenders;    // 用set的话, LogAppenderDefine还要重载一个小于号
+
+    bool operator==(const LogDefine &oth) const {
+        return name == oth.name
+            && level == oth.level
+            && formatter == oth.formatter
+            && appenders == oth.appenders;
+    }
+
+    bool operator<(const LogDefine &oth) const {
+        return name < oth.name;
+    }
+};
+
+sylar::ConfigVar<std::set<LogDefine>>::ptr g_log_defines = 
+    sylar::Config::Lookup("logs", std::set<LogDefine>(), "logs config");
+
+// 冷知识：如何在main函数之前和之后执行一些操作？一般全局对象会在main函数之前构造，所以一定会触发这个对象的构造事件
+// 功能：在main函数之前使用一个事件
+struct LogIniter {
+    LogIniter() {
+        g_log_defines->addListener(0xF1E231, [](const std::set<LogDefine> &old_value, const std::set<LogDefine> &new_value) {
+
+        });
+    }
+};
+
+static LogIniter __log_init;   // 这样在构建__log_init的时候，会调用它自己的构造函数，这是main函数之前的
+
+void LoggerManager::init()
+{
+
 }
 
 }

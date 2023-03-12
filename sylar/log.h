@@ -40,10 +40,12 @@
 #define SYLAR_LOG_FMT_FATAL(logger, fmt, ...) SYLAR_LOG_FMT_LEVEL(logger, sylar::LogLevel::FATAL, fmt, __VA_ARGS__)
 
 #define SYLAR_LOG_ROOT() sylar::LoggerMgr::GetInstance()->getRoot()
+#define SYLAR_LOG_NAME(name) syalr::LoggerMgr::GetInstance()->getLogger(name)
 
 // 防止与别人的项目重命名了，因为项目叫sylar，所以命名空间也叫sylar了
 namespace sylar {
 
+// 关于类的前置声明，看这篇收藏的网址https://blog.csdn.net/whahu1989/article/details/83627658
 class Logger;
 
 // 日志级别
@@ -152,7 +154,9 @@ protected:
 };
 
 // 日志器，定义日志类别
+// 这里为什么使用enable_shared_from_this，见收藏的网址https://blog.csdn.net/caoshangpa/article/details/79392878
 class Logger : public std::enable_shared_from_this<Logger> {
+friend class LoggerManager;
 public:
     typedef std::shared_ptr<Logger> ptr; 
 
@@ -176,6 +180,7 @@ private:
     LogLevel::Level m_level;   // 定义日志器的日志级别
     std::list<LogAppender::ptr> m_appenders;  // Appender集合
     LogFormatter::ptr m_formatter;
+    Logger::ptr m_root;        // 针对开发笔记77-82行的问题所做的改变
 };
 
 // 定义输出到控制台的Appender
@@ -201,7 +206,7 @@ private:
 class LoggerManager {
 public:
     LoggerManager();
-    Logger::ptr getLogger(const std::string &name);
+    Logger::ptr getLogger(const std::string &name);   
 
     void init();
     Logger::ptr getRoot() const { return m_root; }

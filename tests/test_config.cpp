@@ -53,7 +53,7 @@ void print_yaml(const YAML::Node &node, int level)
 
 void test_yaml()
 {
-    YAML::Node root = YAML::LoadFile("/home/liangman/sylar/bin/conf/log.yml");   // 加载yaml配置源文件
+    YAML::Node root = YAML::LoadFile("/home/liangman/sylar/bin/conf/test.yml");   // 加载yaml配置源文件
 
     // 开始解析源文件的值
     print_yaml(root, 0);
@@ -92,7 +92,7 @@ void test_config()
     XX_M(g_str_int_map_value_config, str_int_map, before);
     XX_M(g_str_int_umap_value_config, str_int_umap, before);
 
-    YAML::Node root = YAML::LoadFile("/home/liangman/sylar/bin/conf/log.yml");
+    YAML::Node root = YAML::LoadFile("/home/liangman/sylar/bin/conf/test.yml");
     sylar::Config::LoadFromYaml(root);
 
     SYLAR_LOG_INFO(SYLAR_LOG_ROOT()) << "after: " << g_int_value_config->getValue();
@@ -186,6 +186,7 @@ void test_class()
         SYLAR_LOG_INFO(SYLAR_LOG_ROOT()) << prefix << ": size=" << m.size(); \
     }
 
+    // 测试配置模块的事件机制
     g_person->addListener(10, [](const Person &old_value, const Person &new_value){
         SYLAR_LOG_INFO(SYLAR_LOG_ROOT()) << "old_value=" << old_value.toString()
                 << " new value=" << new_value.toString();
@@ -194,7 +195,7 @@ void test_class()
     XX_PM(g_person_map, "class.map before");
     SYLAR_LOG_INFO(SYLAR_LOG_ROOT()) << "before: " << g_person_vec_map->toString();
 
-    YAML::Node root = YAML::LoadFile("/home/liangman/sylar/bin/conf/log.yml");
+    YAML::Node root = YAML::LoadFile("/home/liangman/sylar/bin/conf/test.yml");
     sylar::Config::LoadFromYaml(root);
 
     SYLAR_LOG_INFO(SYLAR_LOG_ROOT()) << "after: " << g_person->getValue().toString() << " - " << g_person->toString();

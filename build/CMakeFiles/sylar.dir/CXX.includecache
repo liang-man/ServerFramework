@@ -40,6 +40,18 @@ yaml-cpp/yaml.h
 functional
 -
 
+/home/liangman/sylar/sylar/log.cpp
+log.h
+/home/liangman/sylar/sylar/log.h
+iostream
+-
+functional
+-
+time.h
+-
+cstdarg
+-
+
 /home/liangman/sylar/sylar/log.h
 string
 -
