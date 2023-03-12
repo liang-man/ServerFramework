@@ -40,7 +40,7 @@
 #define SYLAR_LOG_FMT_FATAL(logger, fmt, ...) SYLAR_LOG_FMT_LEVEL(logger, sylar::LogLevel::FATAL, fmt, __VA_ARGS__)
 
 #define SYLAR_LOG_ROOT() sylar::LoggerMgr::GetInstance()->getRoot()
-#define SYLAR_LOG_NAME(name) syalr::LoggerMgr::GetInstance()->getLogger(name)
+#define SYLAR_LOG_NAME(name) sylar::LoggerMgr::GetInstance()->getLogger(name)
 
 // 防止与别人的项目重命名了，因为项目叫sylar，所以命名空间也叫sylar了
 namespace sylar {
@@ -181,7 +181,7 @@ public:
     const std::string &getName() const { return m_name; }
 
     void setFormatter(LogFormatter::ptr val);
-    void setFormatter(std::string &val);
+    void setFormatter(const std::string &val);   // 这里必须是常量引用，而不是引用
     LogFormatter::ptr getFormatter();
 private:
     std::string m_name;        // 日志名称

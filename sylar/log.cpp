@@ -221,7 +221,7 @@ void Logger::setFormatter(LogFormatter::ptr val)
     m_formatter = val;
 }
 
-void Logger::setFormatter(std::string &val)
+void Logger::setFormatter(const std::string &val)
 {
     LogFormatter::ptr new_vale(new LogFormatter(val));
     if (new_vale->isError()) {
@@ -517,6 +517,7 @@ struct LogDefine {
 };
 
 // 因为自定义了类，所以还要对其进行偏特化
+// 把string转成类
 template<>
 class LexicalCast<std::string, std::set<LogDefine>> {
 public:
@@ -570,13 +571,34 @@ public:
     }
 };
 
+// 把类转成string 要遵寻约定优于配置原则
 template<>
-class LexicalCast<std::vector<T>, std::string> {
+class LexicalCast<std::set<LogDefine>, std::string> {
 public:
-    std::string operator()(const std::vector<T> &v) {
+    std::string operator()(const std::set<LogDefine> &v) {
         YAML::Node node;
         for (auto &i : v) {
-            node.push_back(YAML::Load(LexicalCast<T, std::string>()(i)));
+            YAML::Node n;
+            n["name"] = i.name;
+            n["level"] = LogLevel::ToString(i.level);
+            if (i.formatter.empty()) {
+                n["level"] = i.formatter;
+            }
+            for (auto &a : i.appenders) {
+                YAML::Node na;
+                if (a.type == 1) {
+                    na["type"] = "FileLogAppender";
+                    na["file"] = a.file;
+                } else if (a.type == 2) {
+                    na["type"] = "StdoutLogAppender";
+                }
+                na["level"] = LogLevel::ToString(a.level);
+                if (!a.formatter.empty()) {
+                    na["formatter"] = a.formatter;
+                }
+                na["appenders"].push_back(na);
+            }
+            node.push_back(n);
         }
         std::stringstream ss;
         ss << node;
@@ -609,6 +631,7 @@ struct LogIniter {
 
                 logger->setLevel(i.level);
                 if (!i.formatter.empty()) {
+                    // logger->setFormatter(i.formatter);
                     logger->setFormatter(i.formatter);
                 }
 
@@ -616,7 +639,7 @@ struct LogIniter {
                 for (auto &a : i.appenders) {
                     LogAppender::ptr ap;
                     if (a.type == 1) {
-                        ap.reset(new FileLogAppender(i.file));
+                        ap.reset(new FileLogAppender(a.file));
                     } else if (a.type == 2) {
                         ap.reset(new StdoutLogAppender);
                     }

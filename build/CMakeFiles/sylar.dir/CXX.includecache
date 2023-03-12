@@ -51,6 +51,8 @@ time.h
 -
 cstdarg
 -
+config.h
+/home/liangman/sylar/sylar/config.h
 
 /home/liangman/sylar/sylar/log.h
 string
