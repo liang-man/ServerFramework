@@ -82,6 +82,16 @@ std::stringstream &LogEventWrap::getSS()
     return m_event->getSS();
 }
 
+void LogAppender::setFormatter(LogFormatter::ptr val) 
+{ 
+    m_formatter = val; 
+    if (m_formatter) {    // 用于表示appender自己的formatter
+        m_hasFormatter = true;
+    } else {
+        m_hasFormatter = false;
+    }
+}
+
 // %m -- 消息体
 // %p -- level
 // %r -- 启动后的时间
@@ -226,6 +236,14 @@ Logger::Logger(const std::string &name) : m_name(name), m_level(LogLevel::DEBUG)
 void Logger::setFormatter(LogFormatter::ptr val)
 {
     m_formatter = val;
+
+    // 这里增加是因为：代码层面修改了日志的格式，但是在Stdout输出的时候，日志格式却不会变
+    // 还涉及到它自己下游的appenders里的formatter
+    for (auto &i : m_appenders) {
+        if (!i->m_hasFormatter) {
+            i->m_formatter = m_formatter;
+        }
+    }
 }
 
 void Logger::setFormatter(const std::string &val)
@@ -237,7 +255,8 @@ void Logger::setFormatter(const std::string &val)
                   << std::endl;
         return;
     }
-    m_formatter = new_vale;
+    // m_formatter = new_vale;   // 这样操作不友好
+    setFormatter(new_vale);
 }
 
 LogFormatter::ptr Logger::getFormatter()
@@ -308,7 +327,8 @@ void Logger::fatal(LogEvent::ptr event)
 void Logger::addAppender(LogAppender::ptr appender)
 {
     if (!appender->getFormatter()) {
-        appender->setFormatter(m_formatter);   // 这样就保证每个都有formatter了
+        // appender->setFormatter(m_formatter);   // 这样就保证每个都有formatter了
+        appender->m_formatter = m_formatter;
     }
     m_appenders.push_back(appender);
 }
@@ -348,7 +368,7 @@ std::string FileLogAppender::toYamlString()
     if (m_level != LogLevel::UNKNOW) {
         node["level"] = LogLevel::ToString(m_level);
     }
-    if (m_formatter) {
+    if (m_hasFormatter && m_formatter) {
         node["formatter"] = m_formatter->getPattern();
     }
     std::stringstream ss;
@@ -379,7 +399,7 @@ std::string StdoutLogAppender::toYamlString()
     if (m_level != LogLevel::UNKNOW) {
         node["level"] = LogLevel::ToString(m_level);
     }
-    if (m_formatter) {
+    if (m_hasFormatter && m_formatter) {
         node["formatter"] = m_formatter->getPattern();
     }
     std::stringstream ss;
@@ -694,7 +714,6 @@ struct LogIniter {
 
                 logger->setLevel(i.level);
                 if (!i.formatter.empty()) {
-                    // logger->setFormatter(i.formatter);
                     logger->setFormatter(i.formatter);
                 }
 
@@ -707,6 +726,18 @@ struct LogIniter {
                         ap.reset(new StdoutLogAppender);
                     }
                     ap->setLevel(a.level);
+                    // 上一版本的遗留问题，就是因为在appenders里面没有解析formatter，加上之后，就可以初始化appenders下的formatter了
+                    if (!a.formatter.empty()) {
+                        LogFormatter::ptr fmt(new LogFormatter(a.formatter));
+                        if (!fmt->isError()) {
+                            ap->setFormatter(fmt);
+                        } else {
+                            std::cout << "log name=" << i.name 
+                                      << "appender type=" << a.type 
+                                      << " formatter=" << a.formatter 
+                                      << std::endl;
+                        }
+                    }
                     logger->addAppender(ap);
                 }
             }

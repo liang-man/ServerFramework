@@ -140,6 +140,7 @@ private:
 
 // 日志输出地
 class LogAppender {
+friend class Logger;
 public:
     typedef std::shared_ptr<LogAppender> ptr;
     // 因为日志输出的地方有很多，所以把它定义成虚类. 如果不定义成虚析构函数，那么它的子类释放的时候，可能会出现一些释放的问题
@@ -149,7 +150,7 @@ public:
 
     virtual std::string toYamlString() = 0;
     
-    void setFormatter(LogFormatter::ptr val) { m_formatter = val; }
+    void setFormatter(LogFormatter::ptr val);
     LogFormatter::ptr getFormatter() const { return m_formatter; }
 
     LogLevel::Level getLevel() const { return m_level; }
@@ -157,6 +158,7 @@ public:
 protected:
     LogLevel::Level m_level = LogLevel::DEBUG;    // 定义这个Appender主要针对哪个日志级别   定义为proteced，这样它的子类就可以使用到
     LogFormatter::ptr m_formatter;
+    bool m_hasFormatter = false;   // 针对开发笔记87-89行的问题所做的改变
 };
 
 // 日志器，定义日志类别

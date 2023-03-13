@@ -216,6 +216,10 @@ void test_log()
     std::cout << "=================" << std::endl;
     std::cout << root <<std::endl;
     SYLAR_LOG_INFO(system_log) << "hello system" << std::endl;
+
+    // 这条打印的日志，格式变了，在终端输出也会跟着变，也会存储在system.txt文件里，但是日志格式还是yml配置里的格式，思考要怎么解决？
+    system_log->setFormatter("%d - %m%n");
+    SYLAR_LOG_INFO(system_log) << "hello system" << std::endl;
 }
 
 int main(int argc, char **argv)
