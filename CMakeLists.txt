@@ -1,6 +1,10 @@
 cmake_minimum_required(VERSION 3.0)
 project(sylar)
 
+include (cmake/utils.cmake)
+
+add_definitions(-Wno-builtin-macro-redefined)
+
 set(CMAKE_VERBOSE_MAKEFILE ON)
 # set(CMAKE_CXX_FLAGS "$ENV{CXXFLAGS} -rdynamic -O3 -g -std=c++11 -Wall -Wno-deprecated -Werror -Wno-unused-function")
 set(CMAKE_CXX_FLAGS "$ENV{CXXFLAGS} -rdynamic -O0 -ggdb -std=c++11 -Wall -Wno-deprecated -Werror -Wno-unused-function")
@@ -19,13 +23,16 @@ set(LIB_SRC
 )
 
 add_library(sylar SHARED ${LIB_SRC})
+redefine_file_macro(sylar)  # __FILE__
 
 add_executable(test_log tests/test_log.cpp)
 add_dependencies(test_log sylar)
+redefine_file_macro(test_log)
 target_link_libraries(test_log sylar yaml-cpp)
 
 add_executable(test_config tests/test_config.cpp)
 add_dependencies(test_config sylar)
+redefine_file_macro(test_config)
 target_link_libraries(test_config sylar yaml-cpp)
 
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)

@@ -6,6 +6,10 @@
 
 #IncludeRegexTransform: 
 
+/home/liangman/sylar/sylar/config.cpp
+config.h
+/home/liangman/sylar/sylar/config.h
+
 /home/liangman/sylar/sylar/config.h
 memory
 -
@@ -75,6 +79,10 @@ singleton.h
 /home/liangman/sylar/sylar/singleton.h
 memory
 -
+
+/home/liangman/sylar/sylar/util.cpp
+util.h
+/home/liangman/sylar/sylar/util.h
 
 /home/liangman/sylar/sylar/util.h
 pthread.h
