@@ -83,6 +83,10 @@ memory
 -
 pthread.h
 -
+semaphore.h
+-
+stdint.h
+-
 
 ../sylar/util.h
 pthread.h
@@ -99,4 +103,6 @@ stdint.h
 /home/liangman/sylar/tests/test_thread.cpp
 sylar/sylar.h
 /home/liangman/sylar/tests/sylar/sylar.h
+unistd.h
+-
 

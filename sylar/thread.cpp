@@ -13,6 +13,26 @@ static thread_local std::string t_thread_name = "UNKNOW";
 // 这里又出现不同文件静态变量初始化顺序的问题了？g_logger应该加在log.cpp里确定初始化顺序？（来自弹幕）
 static sylar::Logger::ptr g_logger = SYLAR_LOG_NAME("system");
 
+Semaphore::Semaphore(uint32_t count)
+{
+    // if ()
+}
+
+Semaphore::~Semaphore()
+{
+
+}
+
+void Semaphore::wait()
+{
+
+}
+
+void Semaphore::notify()
+{
+
+}
+
 Thread *Thread::GetThis()
 {
     return t_thread;
@@ -31,7 +51,7 @@ void Thread::SetName(const std::string &name)
     t_thread_name = name;
 }
 
-Thread::Thread(std::function<void()> cb, const std::string &name)
+Thread::Thread(std::function<void()> cb, const std::string &name) : m_cb(cb), m_name(name)
 {
     if (name.empty()) {
         m_name = "UNKNOW";
