@@ -372,8 +372,19 @@ FileLogAppender::FileLogAppender(const std::string &filename) : m_filename(filen
 void FileLogAppender::log(std::shared_ptr<Logger> logger, LogLevel::Level level, LogEvent::ptr event) 
 {
     if (level >= m_level) {
+        uint64_t nowTime = time(0);
+        // if (nowTime != m_lastTime) {
+        //     reopen();
+        //     m_lastTime = nowTime;
+        // }
         MutexType::Lock lock(m_mutex);
+        // 这样写有个问题，如果在写日志过程中，文件被强硬删除，竟然不会报错？也没有产生新的文件
+        // 如何复现：用多线程一直写日志，不要停，此时去把mutex.txt删除了，现象是不会报错，也不会产生新的mutex.txt文件
+        // 通过加上面的if判断解决(真的解决了吗？不需要加锁吗？我这里有bug，文件会不断被reopen重写，大小一直来回变，不会增长，就先注释了)
         m_filestream << m_formatter->format(logger, level, event);
+        // if (!(m_filestream << m_formatter->format(logger, level, event))) {
+        //     std::cout << "write error" << std::endl;
+        // }   
     }
 }
 

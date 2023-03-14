@@ -6,10 +6,6 @@
 
 #IncludeRegexTransform: 
 
-/home/liangman/sylar/sylar/config.cpp
-config.h
-/home/liangman/sylar/sylar/config.h
-
 /home/liangman/sylar/sylar/config.h
 memory
 -
@@ -82,14 +78,6 @@ thread.h
 memory
 -
 
-/home/liangman/sylar/sylar/thread.cpp
-thread.h
-/home/liangman/sylar/sylar/thread.h
-log.h
-/home/liangman/sylar/sylar/log.h
-util.h
-/home/liangman/sylar/sylar/util.h
-
 /home/liangman/sylar/sylar/thread.h
 thread
 -
@@ -102,6 +90,8 @@ pthread.h
 semaphore.h
 -
 stdint.h
+-
+atomic
 -
 
 /home/liangman/sylar/sylar/util.h

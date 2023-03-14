@@ -77,6 +77,8 @@ semaphore.h
 -
 stdint.h
 -
+atomic
+-
 
 ../sylar/util.h
 pthread.h
