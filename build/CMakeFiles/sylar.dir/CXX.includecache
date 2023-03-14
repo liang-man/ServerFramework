@@ -80,6 +80,24 @@ singleton.h
 memory
 -
 
+/home/liangman/sylar/sylar/thread.cpp
+thread.h
+/home/liangman/sylar/sylar/thread.h
+log.h
+/home/liangman/sylar/sylar/log.h
+util.h
+/home/liangman/sylar/sylar/util.h
+
+/home/liangman/sylar/sylar/thread.h
+thread
+-
+functional
+-
+memory
+-
+pthread.h
+-
+
 /home/liangman/sylar/sylar/util.cpp
 util.h
 /home/liangman/sylar/sylar/util.h

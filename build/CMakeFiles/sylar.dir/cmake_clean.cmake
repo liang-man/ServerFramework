@@ -3,6 +3,7 @@ file(REMOVE_RECURSE
   "../lib/libsylar.so"
   "CMakeFiles/sylar.dir/sylar/config.cpp.o"
   "CMakeFiles/sylar.dir/sylar/log.cpp.o"
+  "CMakeFiles/sylar.dir/sylar/thread.cpp.o"
   "CMakeFiles/sylar.dir/sylar/util.cpp.o"
 )
 
