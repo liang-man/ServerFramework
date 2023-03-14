@@ -227,7 +227,7 @@ public:
 private:
     std::string m_filename;
     std::ofstream m_filestream;
-    uint64_t m_lastTime = 0;
+    // uint64_t m_lastTime = 0;
 };
 
 class LoggerManager {

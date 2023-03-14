@@ -6,6 +6,10 @@
 
 #IncludeRegexTransform: 
 
+/home/liangman/sylar/sylar/config.cpp
+config.h
+/home/liangman/sylar/sylar/config.h
+
 /home/liangman/sylar/sylar/config.h
 memory
 -
@@ -29,12 +33,14 @@ unordered_set
 -
 exception
 -
-log.h
-/home/liangman/sylar/sylar/log.h
 yaml-cpp/yaml.h
 -
 functional
 -
+log.h
+/home/liangman/sylar/sylar/log.h
+thread.h
+/home/liangman/sylar/sylar/thread.h
 
 /home/liangman/sylar/sylar/log.cpp
 log.h

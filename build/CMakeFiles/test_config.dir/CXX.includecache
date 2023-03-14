@@ -29,12 +29,14 @@ unordered_set
 -
 exception
 -
-log.h
-../sylar/log.h
 yaml-cpp/yaml.h
 -
 functional
 -
+log.h
+../sylar/log.h
+thread.h
+../sylar/thread.h
 
 ../sylar/log.h
 string

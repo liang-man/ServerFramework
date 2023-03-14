@@ -12,9 +12,11 @@
 #include <unordered_map>
 #include <unordered_set>
 #include <exception>
-#include "log.h"
 #include <yaml-cpp/yaml.h>
 #include <functional>
+
+#include "log.h"
+#include "thread.h"
 
 namespace sylar {
 
@@ -247,6 +249,7 @@ template<class T, class FromStr = LexicalCast<std::string, T>   // 类的特例�
 class ConfigVar : public ConfigVarBase {
 public:
     typedef std::shared_ptr<ConfigVar> ptr;
+    typedef RWMutex MutexType;
     /*
      * c++11里function很好用，可以封装成指针、lambda格式、以及成员或者伪装，把一个函数签名不一样的给包装成一个满足需要的接口
      * 与智能指针一样，蛮有必要去了解一下
@@ -261,6 +264,7 @@ public:
     // 外部的类型转成string类型进行解析
     std::string toString() override {
         try {
+            MutexType::ReadLock lock(m_mutex);
             // return boost::lexical_cast<std::string>(m_val);   // 简单版本，只支持简单类型  而对于基础类型的转换，由新定义的通用的基础类型转换类来做，这样不至于说加了复杂类型转换，简单类型转换就不支持了
             return ToStr()(m_val);        // 复杂版本
         } catch (std::exception &e) {
@@ -282,37 +286,59 @@ public:
         return false;
     } 
 
-    const T getValue() const { return m_val; }
+    // 加了锁后，这样写编译会报错，因为const成员函数内，不允许成员改变, lock不是const方法
+    // const T getValue() const { 
+    //     MutexType::ReadLock lock(m_mutex);
+    //     return m_val; 
+    // }
+    const T getValue() { 
+        MutexType::ReadLock lock(m_mutex);
+        return m_val; 
+    }
     // void setValue(const T &val) { m_val = val; }
     // 我们要通知变化，比如100项配置里，我们只改了1项，那么没变化的没必要让用户知道，所以要知道原值和新值是否发生了变化
     void setValue(const T &val) { 
-        if (val == m_val) {
-            return;
+        {
+            MutexType::ReadLock lock(m_mutex);   // 出了这个局部域，这个锁就释放掉了
+            if (val == m_val) {
+                return;
+            }
+            for (auto &i : m_cbs) {
+                i.second(m_val, val);   // 回调
+            }
         }
-        for (auto &i : m_cbs) {
-            i.second(m_val, val);
-        }
+        MutexType::WriteLock lock(m_mutex);   // 因为下面要改这个值，确保没有人在读或者写
         m_val = val;
     }
     std::string getTypeName() const override { return typeid(T).name(); }
 
     // 监听
-    void addListener(uint64_t key, on_change_callback cb) {
-        m_cbs[key] = cb;
+    // void addListener(uint64_t key, on_change_callback cb) {
+    //     m_cbs[key] = cb;
+    // }
+    uint64_t addListener(on_change_callback cb) {
+        static uint64_t s_fun_id = 0;
+        MutexType::WriteLock lock(m_mutex);
+        ++s_fun_id;
+        m_cbs[s_fun_id] = cb;
+        return s_fun_id;
     }
 
     // 删除
     void delListener(uint64_t key) {
+        MutexType::WriteLock lock(m_mutex);
         m_cbs.erase(key);
     }
 
     on_change_callback getListener(uint64_t key) { 
+        MutexType::WriteLock lock(m_mutex);
         auto it = m_cbs.find(key);
         return it == m_cbs.end() ? nullptr : it->second; 
     } 
 
     // 清空
     void clearListener() {
+        MutexType::WriteLock lock(m_mutex);
         m_cbs.clear();
     }
 private:
@@ -322,17 +348,20 @@ private:
     // 为什么要用map？因为function没有比较函数，如果我们想在vector里判断是否是同一个function，是没法判断的，因为没有比较函数
     // 所以要用map加一个关键字标签key(uint64_t)，要求唯一，一般可以用hash值
     // 为此还需要增加监听
-    std::map<uint64_t, on_change_callback> m_cbs;
+    std::map<uint64_t, on_change_callback> m_cbs;    
+    MutexType m_mutex;
 };
 
 // 实现创建和查找日志
 class Config {
 public:
     typedef std::unordered_map<std::string, ConfigVarBase::ptr> ConfigVarMap;
+    typedef RWMutex MutexType;
 
     template<class T>
     static typename ConfigVar<T>::ptr Lookup(const std::string &name, const T &default_vale,
             const std::string &description = "") {
+        MutexType::WriteLock lock(GetMutex());
         ////////////////对下面注释的改变//////////////
         // 这样做了之后，有问题就会爆出这个问题
         auto it = GetDatas().find(name);
@@ -368,6 +397,7 @@ public:
 
     template<class T>
     static typename ConfigVar<T>::ptr Lookup(const std::string &name) {
+        MutexType::ReadLock lock(GetMutex());
         auto it = GetDatas().find(name);
         if (it == GetDatas().end()) {
             return nullptr;
@@ -377,6 +407,9 @@ public:
 
     static void LoadFromYaml(const YAML::Node &root);
     static ConfigVarBase::ptr LookupBase(const std::string &name);
+
+    // 返回map，采用visit模式；当然也可以直接返回map的一份拷贝
+    static void Visit(std::function<void(ConfigVarBase::ptr)> cb);
 private:
     // static ConfigVarMap s_datas;   // 存放config的所有参数 但这样写会导致core，因为调用Lookup()时，这个静态成员s_datas不一定先初始化了，就会导致s_datas在内存中的数据结构是有问题的
     // 原本s_datas初始化的位置是在config.cpp里，用全局对象的形式
@@ -384,6 +417,11 @@ private:
     static ConfigVarMap &GetDatas() {
         static ConfigVarMap s_datas;
         return s_datas;
+    }
+
+    static MutexType &GetMutex() {
+        static MutexType s_mutex;
+        return s_mutex;
     }
 };
 

@@ -372,7 +372,7 @@ FileLogAppender::FileLogAppender(const std::string &filename) : m_filename(filen
 void FileLogAppender::log(std::shared_ptr<Logger> logger, LogLevel::Level level, LogEvent::ptr event) 
 {
     if (level >= m_level) {
-        uint64_t nowTime = time(0);
+        // uint64_t nowTime = time(0);
         // if (nowTime != m_lastTime) {
         //     reopen();
         //     m_lastTime = nowTime;
@@ -728,7 +728,8 @@ sylar::ConfigVar<std::set<LogDefine>>::ptr g_log_defines =
 // 功能：在main函数之前初始化一个事件，当有变化的时候会通过这个事件来触发
 struct LogIniter {
     LogIniter() {
-        g_log_defines->addListener(0xF1E231, [](const std::set<LogDefine> &old_value, const std::set<LogDefine> &new_value) {
+        // g_log_defines->addListener(0xF1E231, [](const std::set<LogDefine> &old_value, const std::set<LogDefine> &new_value) {
+            g_log_defines->addListener([](const std::set<LogDefine> &old_value, const std::set<LogDefine> &new_value) {
             // 新增
             SYLAR_LOG_INFO(SYLAR_LOG_ROOT()) << "on_logger_conf_changed";
             for (auto &i : new_value) {
