@@ -12,6 +12,7 @@
 #include <map>
 #include "util.h"
 #include "singleton.h"
+#include "thread.h"
 
 // 为了方便日志的使用
 // 这里在宏内部用if语句构造了局部变量LogEventWrap，很巧妙的利用了局部变量的生命周期实现打印：LogEventWrap在if语句结束后会结束生命周期从而用其析构函数实现打印
@@ -111,6 +112,7 @@ private:
 };
 
 // 日志格式
+// LogFormatter没有方法去直接修改它，因为它构造好之后是不会变的，只有用新的formatter把它覆盖掉，所以不用加锁
 class LogFormatter {
 public:
     typedef std::shared_ptr<LogFormatter> ptr;
@@ -143,22 +145,26 @@ class LogAppender {
 friend class Logger;
 public:
     typedef std::shared_ptr<LogAppender> ptr;
+    typedef Mutex MutexType;     // 这样是为了方便测试不同的锁，这样换个锁只用在这一处改就行了，不用整个代码都换了
     // 因为日志输出的地方有很多，所以把它定义成虚类. 如果不定义成虚析构函数，那么它的子类释放的时候，可能会出现一些释放的问题
     virtual ~LogAppender() {}
 
     virtual void log(std::shared_ptr<Logger> logger, LogLevel::Level level, LogEvent::ptr event) = 0;
 
-    virtual std::string toYamlString() = 0;
+    virtual std::string toYamlString() = 0;   // 这里也要加锁，因为当一个线程输出的时候，其他线程可能又修改了
     
     void setFormatter(LogFormatter::ptr val);
-    LogFormatter::ptr getFormatter() const { return m_formatter; }
+    // LogFormatter::ptr getFormatter() const { return m_formatter; }
+    LogFormatter::ptr getFormatter();   // 为了多线程
 
+    // 是原子的，不需要上锁
     LogLevel::Level getLevel() const { return m_level; }
     void setLevel(LogLevel::Level val) { m_level = val; }
 protected:
     LogLevel::Level m_level = LogLevel::DEBUG;    // 定义这个Appender主要针对哪个日志级别   定义为proteced，这样它的子类就可以使用到
     LogFormatter::ptr m_formatter;
     bool m_hasFormatter = false;   // 针对开发笔记87-89行的问题所做的改变
+    MutexType m_mutex;   // Appender写很多，读比较少
 };
 
 // 日志器，定义日志类别
@@ -167,6 +173,7 @@ class Logger : public std::enable_shared_from_this<Logger> {
 friend class LoggerManager;
 public:
     typedef std::shared_ptr<Logger> ptr; 
+    typedef Mutex MutexType;
 
     Logger(const std::string &name = "root");
     void log(LogLevel::Level level, LogEvent::ptr event);
@@ -180,6 +187,7 @@ public:
     void addAppender(LogAppender::ptr appender);
     void delAppender(LogAppender::ptr appender);
     void clearAppenders();
+    // 是原子的，不需要上锁
     LogLevel::Level getLevel() const { return m_level; }
     void setLevel(LogLevel::Level val) { m_level = val; }
 
@@ -196,6 +204,7 @@ private:
     std::list<LogAppender::ptr> m_appenders;  // Appender集合
     LogFormatter::ptr m_formatter;
     Logger::ptr m_root;        // 针对开发笔记77-82行的问题所做的改变
+    MutexType m_mutex;
 };
 
 // 定义输出到控制台的Appender
@@ -222,6 +231,7 @@ private:
 
 class LoggerManager {
 public:
+    typedef Mutex MutexType;
     LoggerManager();
     Logger::ptr getLogger(const std::string &name);   
 
@@ -229,8 +239,9 @@ public:
     Logger::ptr getRoot() const { return m_root; }
     std::string toYamlString();
 private:
-    std::map<std::string, Logger::ptr> m_loggers;
-    Logger::ptr m_root;
+    std::map<std::string, Logger::ptr> m_loggers;   // map要操作，取logger的时候，如果不加锁，此时再加入logger，可能会导致数据结构有问题
+    Logger::ptr m_root;    // 取root不用加锁，因为我们没有改root的操作
+    MutexType m_mutex;
 };
 
 typedef sylar::Singleton<LoggerManager> LoggerMgr;

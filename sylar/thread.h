@@ -61,15 +61,6 @@ private:
     bool m_locked;
 };
 
-// 普通的互斥量
-// 在读和写的频率差不多的时候，不分读写的互斥量会好一点
-class Mutex {
-public:
-
-private:
-    
-};
-
 template<class T>
 struct ReadScopedLockImpl {
 public:
@@ -130,6 +121,41 @@ private:
     bool m_locked;
 };
 
+// 普通的互斥量
+// 在读和写的频率差不多的时候，不分读写的互斥量会好一点
+class Mutex {
+public:
+    typedef ScopedLockImpl<Mutex> Lock;
+
+    Mutex() {
+        pthread_mutex_init(&m_mutex, nullptr);
+    }
+
+    ~Mutex() {
+        pthread_mutex_destroy(&m_mutex);
+    } 
+
+    void lock() {
+        pthread_mutex_lock(&m_mutex);
+    }
+
+    void unlock() {
+        pthread_mutex_unlock(&m_mutex);
+    }
+private:
+    pthread_mutex_t m_mutex;
+};
+
+// 空的锁，什么都不干，为了测试，这样测试起来就很方便
+class NullMutex {
+public:
+    typedef ScopedLockImpl<NullMutex> Lock;
+    NullMutex() {}
+    ~NullMutex() {}
+    void lock() {}
+    void unlock() {}
+};
+
 // 分读和写的互斥量
 // 大并发的时候，分读和写会好一点
 class RWMutex {
@@ -158,6 +184,16 @@ public:
     }
 private:
     pthread_rwlock_t m_lock;
+};
+
+class NullRWMutex {
+public:
+    typedef ReadScopedLockImpl<NullRWMutex> ReadLock;
+    typedef WriteScopedLockImpl<NullRWMutex> WriteLock;
+    NullRWMutex() {}
+    ~NullRWMutex() {}
+    void lock() {}
+    void unlock() {}
 };
 
 class Thread {

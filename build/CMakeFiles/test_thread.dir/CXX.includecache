@@ -57,6 +57,8 @@ util.h
 ../sylar/util.h
 singleton.h
 ../sylar/singleton.h
+thread.h
+../sylar/thread.h
 
 ../sylar/singleton.h
 memory

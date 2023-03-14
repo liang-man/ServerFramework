@@ -3,6 +3,7 @@
 
 CMakeFiles/test_log.dir/tests/test_log.cpp.o: ../sylar/log.h
 CMakeFiles/test_log.dir/tests/test_log.cpp.o: ../sylar/singleton.h
+CMakeFiles/test_log.dir/tests/test_log.cpp.o: ../sylar/thread.h
 CMakeFiles/test_log.dir/tests/test_log.cpp.o: ../sylar/util.h
 CMakeFiles/test_log.dir/tests/test_log.cpp.o: ../tests/test_log.cpp
 

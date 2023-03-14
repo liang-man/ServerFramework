@@ -6,12 +6,14 @@ CMakeFiles/sylar.dir/sylar/config.cpp.o
  /home/liangman/sylar/sylar/config.h
  /home/liangman/sylar/sylar/log.h
  /home/liangman/sylar/sylar/singleton.h
+ /home/liangman/sylar/sylar/thread.h
  /home/liangman/sylar/sylar/util.h
 CMakeFiles/sylar.dir/sylar/log.cpp.o
  /home/liangman/sylar/sylar/config.h
  /home/liangman/sylar/sylar/log.cpp
  /home/liangman/sylar/sylar/log.h
  /home/liangman/sylar/sylar/singleton.h
+ /home/liangman/sylar/sylar/thread.h
  /home/liangman/sylar/sylar/util.h
 CMakeFiles/sylar.dir/sylar/thread.cpp.o
  /home/liangman/sylar/sylar/log.h
