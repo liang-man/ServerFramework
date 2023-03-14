@@ -15,22 +15,28 @@ static sylar::Logger::ptr g_logger = SYLAR_LOG_NAME("system");
 
 Semaphore::Semaphore(uint32_t count)
 {
-    // if ()
+    if (sem_init(&m_semaphore, 0, count)) {
+        throw std::logic_error("sem_init error");
+    }
 }
 
 Semaphore::~Semaphore()
 {
-
+    sem_destroy(&m_semaphore);
 }
 
 void Semaphore::wait()
 {
-
+    if (sem_wait(&m_semaphore)) {
+        throw std::logic_error("sem_wait error");
+    }
 }
 
 void Semaphore::notify()
 {
-
+    if (sem_post(&m_semaphore)) {
+        throw std::logic_error("sem_post error");
+    }
 }
 
 Thread *Thread::GetThis()
@@ -56,12 +62,14 @@ Thread::Thread(std::function<void()> cb, const std::string &name) : m_cb(cb), m_
     if (name.empty()) {
         m_name = "UNKNOW";
     }
+    // 创建的这个线程，有可能在这个构造函数返回的时候它还没有开始执行，有的时候可能已经执行，顺序不确定
     int rt = pthread_create(&m_thread, nullptr, &Thread::run, this);
     if (rt) {
         SYLAR_LOG_ERROR(g_logger) << "pthread_create thread fail, rt=" << rt
             << " name=" << name;
         throw std::logic_error("pthread_create error");
     }
+    m_semaphore.wait();   // 所以就在这里等待，如果这个线程没有运行起来，就不出这个构造函数
 }
 
 // 问：线程类的析构函数如何设计？
@@ -81,8 +89,8 @@ void Thread::join()
                 << " name=" << m_name;
             throw std::logic_error("pthread_join error");
         }
+        m_thread = 0;  // join完了之后清空，就不需要了
     }
-    m_thread = 0;  // join完了之后清空，就不需要了
 }
 
 void *Thread::run(void *arg)
@@ -94,6 +102,8 @@ void *Thread::run(void *arg)
 
     std::function<void()> cb;
     cb.swap(thread->m_cb);   // 防止当这个函数里有智能指针的时候，防止它的引用会出现在日志不会被释放掉，这样做至少少了一个引用
+
+    thread->m_semaphore.notify();    // 等线程初始化好了之后把它唤醒 这样保证了线程创建好之后，一定是跑起来的
 
     cb();
     return 0;

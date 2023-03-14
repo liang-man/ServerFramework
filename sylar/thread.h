@@ -23,9 +23,141 @@ public:
 private:
     Semaphore(const Semaphore &) = delete;
     Semaphore(const Semaphore &&) = delete;
-    Semaphore operator=(const Semaphore &) = delete;
+    Semaphore &operator=(const Semaphore &) = delete;
 private:
     sem_t m_semaphore;
+};
+
+// 互斥量一般都在一个局部的范围，首先让它锁，锁完之后要让他解锁，为了防止我们漏掉解锁，我们一般是写一个类，通过类的构造函数加锁，类的析构函数来解锁
+// 锁的种类有很多，但方法都无非是那几个，所以我们定义一个通用的模板类去锁他们，这样传进来都是一个互斥量，但是是什么类型的互斥量我们不关心它
+// 我们这是模板锁，只要提供锁和解锁的方法就行了
+template<class T>
+struct ScopedLockImpl {
+public:
+    ScopedLockImpl(T &mutex) : m_mutex(mutex) {
+        m_mutex.lock();   // 加锁
+        m_locked = true;  // 设置状态
+    }
+
+    ~ScopedLockImpl() {
+        unlock();
+    }
+
+    void lock() {
+        if (!m_locked) {  // 上锁之前先判断一下，没上锁才给加锁，防止死锁 
+            m_mutex.lock();
+            m_locked = true;
+        }
+    }
+
+    void unlock() {
+        if (m_locked) {    // 如果已经上锁了，才解锁
+            m_mutex.unlock();
+            m_locked = false;
+        }
+    }
+private:
+    T &m_mutex;
+    bool m_locked;
+};
+
+// 普通的互斥量
+// 在读和写的频率差不多的时候，不分读写的互斥量会好一点
+class Mutex {
+public:
+
+private:
+    
+};
+
+template<class T>
+struct ReadScopedLockImpl {
+public:
+    ReadScopedLockImpl(T &mutex) : m_mutex(mutex) {
+        m_mutex.rdlock();   // 加锁
+        m_locked = true;  // 设置状态
+    }
+
+    ~ReadScopedLockImpl() {
+        unlock();
+    }
+
+    void lock() {
+        if (!m_locked) {  // 上锁之前先判断一下，没上锁才给加锁，防止死锁 
+            m_mutex.rdlock();
+            m_locked = true;
+        }
+    }
+
+    void unlock() {
+        if (m_locked) {    // 如果已经上锁了，才解锁
+            m_mutex.unlock();
+            m_locked = false;
+        }
+    }
+private:
+    T &m_mutex;
+    bool m_locked;
+};
+
+template<class T>
+struct WriteScopedLockImpl {
+public:
+    WriteScopedLockImpl(T &mutex) : m_mutex(mutex) {
+        m_mutex.wrlock();   // 加锁
+        m_locked = true;  // 设置状态
+    }
+
+    ~WriteScopedLockImpl() {
+        unlock();
+    }
+
+    void lock() {
+        if (!m_locked) {  // 上锁之前先判断一下，没上锁才给加锁，防止死锁 
+            m_mutex.wrlock();
+            m_locked = true;
+        }
+    }
+
+    void unlock() {
+        if (m_locked) {    // 如果已经上锁了，才解锁
+            m_mutex.unlock();
+            m_locked = false;
+        }
+    }
+private:
+    T &m_mutex;
+    bool m_locked;
+};
+
+// 分读和写的互斥量
+// 大并发的时候，分读和写会好一点
+class RWMutex {
+public:
+    typedef ReadScopedLockImpl<RWMutex> ReadLock;
+    typedef WriteScopedLockImpl<RWMutex> WriteLock;
+
+    RWMutex() {
+        pthread_rwlock_init(&m_lock, nullptr);
+    }
+
+    ~RWMutex() {
+        pthread_rwlock_destroy(&m_lock);
+    }
+
+    void rdlock() {
+        pthread_rwlock_rdlock(&m_lock);
+    }
+
+    void wrlock() {
+        pthread_rwlock_wrlock(&m_lock);
+    }
+
+    void unlock() {
+        pthread_rwlock_unlock(&m_lock);
+    }
+private:
+    pthread_rwlock_t m_lock;
 };
 
 class Thread {
@@ -46,7 +178,7 @@ private:
     // 线程库禁止默认拷贝
     Thread (const Thread &) = delete;
     Thread (const Thread &&) = delete;
-    Thread operator=(const Thread &) = delete;
+    Thread &operator=(const Thread &) = delete;
 
     static void *run(void *arg);
 private:
@@ -54,6 +186,8 @@ private:
     pthread_t m_thread = 0;   // 线程，用pthread的方式，std的线程里的功能还是有点少，不满足我们的需求，比如我们还需要线程名称
     std::function<void()> m_cb;
     std::string m_name;   // 线程名称
+
+    Semaphore m_semaphore;
 };
 
 }
