@@ -61,6 +61,10 @@ unistd.h
 -
 stdint.h
 -
+vector
+-
+string
+-
 
 /home/liangman/sylar/tests/test_log.cpp
 iostream

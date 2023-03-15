@@ -62,21 +62,33 @@ singleton.h
 thread.h
 ../sylar/thread.h
 
+../sylar/macro.h
+string.h
+-
+assert.h
+-
+util.h
+../sylar/util.h
+
 ../sylar/singleton.h
 memory
 -
 
 ../sylar/sylar.h
-sylar/log.h
-../sylar/sylar/log.h
-sylar/config.h
-../sylar/sylar/config.h
-sylar/util.h
-../sylar/sylar/util.h
-sylar/singleton.h
-../sylar/sylar/singleton.h
-sylar/thread.h
-../sylar/sylar/thread.h
+log.h
+../sylar/log.h
+config.h
+../sylar/config.h
+util.h
+../sylar/util.h
+singleton.h
+../sylar/singleton.h
+thread.h
+../sylar/thread.h
+macro.h
+../sylar/macro.h
+string
+-
 
 ../sylar/thread.h
 thread
@@ -104,6 +116,10 @@ sys/syscall.h
 unistd.h
 -
 stdint.h
+-
+vector
+-
+string
 -
 
 /home/liangman/sylar/tests/test_thread.cpp

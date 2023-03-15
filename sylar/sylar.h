@@ -1,10 +1,12 @@
 #ifndef __SYLAR_SYLAR_H
 #define __SYLAR_SYLAR_H
 
-#include "sylar/log.h"
-#include "sylar/config.h"
-#include "sylar/util.h"
-#include "sylar/singleton.h"
-#include "sylar/thread.h"
+#include "log.h"
+#include "config.h"
+#include "util.h"
+#include "singleton.h"
+#include "thread.h"
+#include "macro.h"
+#include <string>
 
 #endif
