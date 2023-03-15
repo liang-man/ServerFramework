@@ -8,11 +8,13 @@ CXX_DEFINES = -Dsylar_EXPORTS
 
 CXX_INCLUDES = -I/home/liangman/sylar/. 
 
-# Custom defines: CMakeFiles/sylar.dir/sylar/log.cpp.o_DEFINES = __FILE__="sylar/log.cpp"
-
-# Custom defines: CMakeFiles/sylar.dir/sylar/util.cpp.o_DEFINES = __FILE__="sylar/util.cpp"
-
 # Custom defines: CMakeFiles/sylar.dir/sylar/config.cpp.o_DEFINES = __FILE__="sylar/config.cpp"
 
+# Custom defines: CMakeFiles/sylar.dir/sylar/fiber.cpp.o_DEFINES = __FILE__="sylar/fiber.cpp"
+
+# Custom defines: CMakeFiles/sylar.dir/sylar/log.cpp.o_DEFINES = __FILE__="sylar/log.cpp"
+
 # Custom defines: CMakeFiles/sylar.dir/sylar/thread.cpp.o_DEFINES = __FILE__="sylar/thread.cpp"
+
+# Custom defines: CMakeFiles/sylar.dir/sylar/util.cpp.o_DEFINES = __FILE__="sylar/util.cpp"
 

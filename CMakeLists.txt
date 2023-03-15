@@ -18,10 +18,11 @@ include_directories(/usr/local/include)
 link_directories(/usr/local/lib)
 
 set(LIB_SRC
-    sylar/log.cpp
-    sylar/util.cpp
     sylar/config.cpp
+    sylar/fiber.cpp
+    sylar/log.cpp
     sylar/thread.cpp
+    sylar/util.cpp
 )
 
 add_library(sylar SHARED ${LIB_SRC})
@@ -53,6 +54,11 @@ add_executable(test_util tests/test_util.cpp)
 add_dependencies(test_util sylar)
 redefine_file_macro(test_util)
 target_link_libraries(test_util ${LIB_LIB})
+
+add_executable(test_fiber tests/test_fiber.cpp)
+add_dependencies(test_fiber sylar)
+redefine_file_macro(test_fiber)
+target_link_libraries(test_fiber ${LIB_LIB})
 
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 SET(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)

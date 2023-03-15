@@ -20,7 +20,7 @@
     if (logger->getLevel() <= level) \
         sylar::LogEventWrap(sylar::LogEvent::ptr(new sylar::LogEvent(logger, level, \
             __FILE__, __LINE__, 0, sylar::GetThreadId(), \
-            sylar::GetFiberId(), time(0)))).getSS()
+            sylar::GetFiberId(), time(0), sylar::Thread::GetName()))).getSS()
 
 #define SYLAR_LOG_DEBUG(logger) SYLAR_LOG_LEVEL(logger, sylar::LogLevel::DEBUG)
 #define SYLAR_LOG_INFO(logger) SYLAR_LOG_LEVEL(logger, sylar::LogLevel::INFO)
@@ -32,7 +32,7 @@
     if (logger->getLevel() <= level) \
         sylar::LogEventWrap(sylar::LogEvent::ptr(new sylar::LogEvent(logger, level, \
         __FILE__, __LINE__, 0, sylar::GetThreadId(), \
-        sylar::GetFiberId(), time(0)))).getEvent()->format(fmt, __VA_ARGS__)
+        sylar::GetFiberId(), time(0), sylar::Thread::GetName()))).getEvent()->format(fmt, __VA_ARGS__)
 
 #define SYLAR_LOG_FMT_DEBUG(logger, fmt, ...) SYLAR_LOG_FMT_LEVEL(logger, sylar::LogLevel::DEBUG, fmt, __VA_ARGS__)
 #define SYLAR_LOG_FMT_INFO(logger, fmt, ...) SYLAR_LOG_FMT_LEVEL(logger, sylar::LogLevel::INFO, fmt, __VA_ARGS__)
@@ -70,7 +70,7 @@ class LogEvent {
 public:
     typedef std::shared_ptr<LogEvent> ptr;
     LogEvent(std::shared_ptr<Logger> logger, LogLevel::Level val, const char *file, int32_t m_line, uint32_t elapse,
-            uint32_t thread_id, uint32_t fiber_id, uint64_t time);
+            uint32_t thread_id, uint32_t fiber_id, uint64_t time, const std::string &thread_name);
 
     const char *getFile() const { return m_file; }
     int32_t getLine() const { return m_line; }
@@ -81,6 +81,7 @@ public:
     std::string getContent() const { return m_ss.str(); }
     std::shared_ptr<Logger> getLogger() const { return m_logger; }
     LogLevel::Level getLevel() const { return m_level; }
+    const std::string &getThreadName() const { return m_thread_name; }
 
     std::stringstream &getSS() { return m_ss; }
     void format(const char *fmt, ...);
@@ -93,6 +94,7 @@ private:
     uint32_t m_fiberId = 0;         // 协程号
     uint64_t m_time;                // 时间戳
     std::stringstream m_ss;          // 消息
+    std::string m_thread_name;
 
     std::shared_ptr<Logger> m_logger;
     LogLevel::Level m_level;

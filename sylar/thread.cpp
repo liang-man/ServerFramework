@@ -61,7 +61,7 @@ Thread::Thread(std::function<void()> cb, const std::string &name) : m_cb(cb), m_
 {
     if (name.empty()) {
         m_name = "UNKNOW";
-    }
+    } 
     // 创建的这个线程，有可能在这个构造函数返回的时候它还没有开始执行，有的时候可能已经执行，顺序不确定
     int rt = pthread_create(&m_thread, nullptr, &Thread::run, this);
     if (rt) {
@@ -97,6 +97,7 @@ void *Thread::run(void *arg)
 {
     Thread *thread = (Thread *)arg;   // 拿到的参数肯定是一个线程的参数，所以先要转一下
     t_thread = thread;   // 把线程局部变量设置了
+    t_thread_name = thread->m_name;       // 设置t_thread_name  找了1个小时的bug(三个线程一起跑时，显示每个线程的名字为UNKNOW)，就是因为这个里的t_thread_name名字没有设置
     thread->m_id = sylar::GetThreadId();
     pthread_setname_np(pthread_self(), thread->m_name.substr(0, 15).c_str());
 

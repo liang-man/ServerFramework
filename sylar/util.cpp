@@ -1,6 +1,8 @@
 #include "util.h"
-#include "log.h"
 #include <execinfo.h>
+
+#include "log.h"
+#include "fiber.h"
 
 namespace sylar {
 
@@ -13,7 +15,7 @@ pid_t GetThreadId()
 
 uint32_t GetFiberId()
 {
-    return 0;
+    return sylar::Fiber::GetFiberId();
 }
 
 // 在扔出一个exception的时候，除了应该包含错误，还应该包含栈，这样我们就知道错误是从哪个栈抛出来的，方便调试

@@ -158,6 +158,14 @@ public:
     }
 };
 
+class ThreadNameFormatItem : public LogFormatter::FormatItem {
+public:
+    ThreadNameFormatItem(const std::string &str = "") {}
+    void format(std::ostream &os, std::shared_ptr<Logger> logger, LogLevel::Level level, LogEvent::ptr event) override {
+        os << event->getThreadName();   // 不能直接获取当前线程名称，而是要通过event来，因为后续要专门开一个线程打日志
+    }
+};
+
 class DateTimeFormatItem : public LogFormatter::FormatItem {
 public:
     DateTimeFormatItem(const std::string &format = "%Y-%m-%d %H-%M-%S") : m_format(format) {
@@ -223,15 +231,17 @@ private:
 
 // 切记初始化时，对属性的初始化顺序要与属性定义时的顺序一样
 LogEvent::LogEvent(std::shared_ptr<Logger> logger, LogLevel::Level level, const char *file, int32_t line, uint32_t elapse,
-            uint32_t thread_id, uint32_t fiber_id, uint64_t time)
-    : m_file(file), m_line(line), m_elapse(elapse), m_threadId(thread_id), m_fiberId(fiber_id), m_time(time), m_logger(logger), m_level(level)
+            uint32_t thread_id, uint32_t fiber_id, uint64_t time, const std::string &thread_name)
+    : m_file(file), m_line(line), m_elapse(elapse)
+    , m_threadId(thread_id), m_fiberId(fiber_id)
+    , m_time(time), m_thread_name(thread_name), m_logger(logger), m_level(level)
 {
 
 }
 
 Logger::Logger(const std::string &name) : m_name(name), m_level(LogLevel::DEBUG) 
 {
-    m_formatter.reset(new LogFormatter("%d{%Y-%m-%d %H:%M:%S}%T%t%T%F%T[%p]%T[%c]%T%f:%l%T%m%n"));
+    m_formatter.reset(new LogFormatter("%d{%Y-%m-%d %H:%M:%S}%T%t%T%N%T%F%T[%p]%T[%c]%T%f:%l%T%m%n"));
 
     // 加这个的作用是如果没有任何的配置，那么默认也可以输出到控制台
     // 但其实不用加，在LoggerManager类的初始化里已经加了
@@ -546,7 +556,8 @@ void LogFormatter::init()
         XX(f, FilenameFormatItem),
         XX(l, LineFormatItem),
         XX(T, TabFormatItem),
-        XX(F, FiberIdFormatItem)   
+        XX(F, FiberIdFormatItem),
+        XX(N, ThreadNameFormatItem)      
 #undef XX
     };
 
