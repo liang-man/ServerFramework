@@ -125,7 +125,6 @@ void Fiber::call()
     SetThis(this);
     m_state = EXEC;
     // SYLAR_ASSERT(GetThis() == t_threadFiber);
-    SYLAR_LOG_ERROR(g_logger) << getId();
     if (swapcontext(&t_threadFiber->m_ctx, &m_ctx)) {
         SYLAR_ASSERT2(false, "swapcontext");
     }
@@ -206,6 +205,7 @@ Fiber::ptr Fiber::GetThis()
 void Fiber::YieldToReady()
 {
     Fiber::ptr cur = GetThis();
+    SYLAR_ASSERT(cur->m_state == EXEC);
     cur->m_state = READY;
     cur->swapOut();
 }
@@ -213,7 +213,8 @@ void Fiber::YieldToReady()
 void Fiber::YieldToHold()
 {
     Fiber::ptr cur = GetThis();
-    cur->m_state = HOLD;
+    SYLAR_ASSERT(cur->m_state == EXEC);
+    // cur->m_state = HOLD;
     cur->swapOut();
 }
 
