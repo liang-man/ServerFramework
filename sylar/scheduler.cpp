@@ -11,7 +11,7 @@ static thread_local Scheduler *t_scheduler = nullptr;   // 协程调度器指针
 static thread_local Fiber *t_fiber = nullptr;           
 
 // 创建一个协程，创建的协程执行run方法，但这个协程还未被执行起来
-Scheduler::Scheduler(size_t threads = 1, bool use_caller = true, const std::string &name = "") : m_name(name)
+Scheduler::Scheduler(size_t threads, bool use_caller, const std::string &name) : m_name(name)
 {
     SYLAR_ASSERT(threads > 0);
     if (use_caller) {
@@ -19,7 +19,7 @@ Scheduler::Scheduler(size_t threads = 1, bool use_caller = true, const std::stri
         --threads;
         SYLAR_ASSERT(GetThis() == nullptr);   // 如果GetThis()不为空，说明这个线程里已经存在了一个协程调度器，不能有第二个
         t_scheduler = this;        // 协程调度器等于this
-        m_rootFiber.reset(new Fiber(std::bind(&Scheduler::run, this)));
+        m_rootFiber.reset(new Fiber(std::bind(&Scheduler::run, this), 0, true));
         sylar::Thread::SetName(m_name);
         // 在一个线程里声明一个调度器，当把这个线程放入这个调度器的后，调度器的主协程不再是这个线程的主协程，而是执行run方法的协程作为主协程
         t_fiber = m_rootFiber.get();
@@ -63,6 +63,12 @@ void Scheduler::start()
         m_threads[i].reset(new Thread(std::bind(&Scheduler::run, this), m_name + "_" + std::to_string(i)));
         m_threadIds.push_back(m_threads[i]->getId());
     }
+    lock.unlock();
+    if (m_rootFiber) {
+        // m_rootFiber->swapIn();
+        m_rootFiber->call();
+        SYLAR_LOG_INFO(g_logger) << "call out " << m_rootFiber->getState();
+    }
 }
 
 /*
@@ -82,7 +88,7 @@ void Scheduler::stop()
 
         }
     }
-    bool exit_on_this_fiber = false;
+    // bool exit_on_this_fiber = false;
     if (m_rootThreadId != -1) {
         SYLAR_ASSERT(GetThis() == this);
     } else {
@@ -107,6 +113,8 @@ void Scheduler::setThis()
 
 void Scheduler::run()
 {
+    SYLAR_LOG_INFO(g_logger) << "run";
+    // return;   // 调试
     setThis();
     if (sylar::GetThreadId() != m_rootThreadId) {
         t_fiber = Fiber::GetThis().get();
@@ -133,6 +141,7 @@ void Scheduler::run()
                 }
                 ft = *it;
                 m_fibers.erase(it);
+                break;
             }
         }
         if (tickle_me) {
@@ -151,7 +160,7 @@ void Scheduler::run()
             ft.reset();
         } else if (ft.cb) {
             if (cb_fiber) {
-                cb_fiber->reset(&ft.cb);
+                cb_fiber->reset(ft.cb);
             } else {
                 cb_fiber.reset(new Fiber(ft.cb));
             }
@@ -170,21 +179,33 @@ void Scheduler::run()
             }
         } else {   // 当事情做完了，去ilde一下
             if (idle_fiber->getState() == Fiber::TERM) {
+                SYLAR_LOG_INFO(g_logger) << "idle fiber term";
                 break;
             }
             ++m_idleThreadCount;
             idle_fiber->swapIn();
             --m_idleThreadCount;
-            if (idle_fiber->getState() != Fiber::TERM || idle_fiber->getState() != Fiber::EXCEPT) {
+            if (idle_fiber->getState() != Fiber::TERM && idle_fiber->getState() != Fiber::EXCEPT) {
                 idle_fiber->setState(Fiber::HOLD);
             }
         }
     }
 }
 
+void Scheduler::tickle()
+{
+    SYLAR_LOG_INFO(g_logger) << "tickle";
+}
+
 bool Scheduler::stopping()
 {
+    MutexType::Lock lock(m_mutex);    // 因为用到了list容器的empty方法
+    return m_autoStop && m_stopping && m_fibers.empty() && m_activeThreadCount == 0;
+}
 
+void Scheduler::idle()
+{
+    SYLAR_LOG_INFO(g_logger) << "idle";
 }
 
 }

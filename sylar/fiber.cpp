@@ -2,6 +2,7 @@
 #include "config.h"
 #include "macro.h"
 #include "log.h"
+#include "scheduler.h"
 #include <atomic>
 
 namespace sylar {
@@ -57,7 +58,7 @@ Fiber::Fiber()
 }
 
 // 真正的创建一个协程，需要分配一个栈空间，每个协程都有一个独立的栈，所以每个协程都是在一个固定大小的栈上执行它要执行的函数
-Fiber::Fiber(std::function<void()> cb, size_t stacksize)
+Fiber::Fiber(std::function<void()> cb, size_t stacksize, bool use_caller)
     : m_id(++s_fiber_id), m_cb(cb)
 {
     ++s_fiber_count;
@@ -71,7 +72,11 @@ Fiber::Fiber(std::function<void()> cb, size_t stacksize)
     m_ctx.uc_stack.ss_sp = m_stack;
     m_ctx.uc_stack.ss_size = m_stacksize;
 
-    makecontext(&m_ctx, &Fiber::MainFunc, 0);
+    if (!use_caller) {
+        makecontext(&m_ctx, &Fiber::MainFunc, 0);
+    } else {
+        makecontext(&m_ctx, &Fiber::CallerMainFunc, 0);
+    }
 
     SYLAR_LOG_DEBUG(g_logger) << "Fiber::Fiber id=" << m_id;
 }
@@ -115,6 +120,25 @@ void Fiber::reset(std::function<void()> cb)
     m_state = INIT;
 }
 
+void Fiber::call()
+{
+    SetThis(this);
+    m_state = EXEC;
+    // SYLAR_ASSERT(GetThis() == t_threadFiber);
+    SYLAR_LOG_ERROR(g_logger) << getId();
+    if (swapcontext(&t_threadFiber->m_ctx, &m_ctx)) {
+        SYLAR_ASSERT2(false, "swapcontext");
+    }
+}
+
+void Fiber::back()
+{
+    SetThis(t_threadFiber.get());
+    if (swapcontext(&m_ctx, &t_threadFiber->m_ctx)) {
+        SYLAR_ASSERT2(false, "swapcontext");
+    } 
+}
+
 // 正常情况下操作对象一定是子协程，不是main协程
 // 从线程的main协程swap到当前协程
 void Fiber::swapIn()
@@ -122,19 +146,46 @@ void Fiber::swapIn()
     SetThis(this);
     SYLAR_ASSERT(m_state != EXEC);    // 条件为真就继续运行
     m_state = EXEC;
-    if (swapcontext(&t_threadFiber->m_ctx, &m_ctx)) {
+    // if (swapcontext(&t_threadFiber->m_ctx, &m_ctx)) {     // 与协程调度器功能有冲突
+    if (swapcontext(&Scheduler::GetMainFiber()->m_ctx, &m_ctx)) {    
         SYLAR_ASSERT2(false, "swapcontext");
     }
 }
 
 // 从当前协程swap到main协程
+#if 1
 void Fiber::swapOut()
 {
-    SetThis(t_threadFiber.get());
-    if (swapcontext(&m_ctx, &t_threadFiber->m_ctx)) {
+    // SetThis(t_threadFiber.get());    // 加入协程调度器功能后产生bug
+    SetThis(Scheduler::GetMainFiber());
+    // if (swapcontext(&m_ctx, &t_threadFiber->m_ctx)) {    // 加入协程调度器功能后产生bug
+    if (swapcontext(&m_ctx, &Scheduler::GetMainFiber()->m_ctx)) {
         SYLAR_ASSERT2(false, "swapcontext");
     }
 }
+#endif
+
+// 这里需要来回做切换，比较频繁，想想怎么优化，不用if else判断，那样速度就会快很多
+// 优化措施就像call()一样，把else里的部分单独拎出来作为back()函数
+// 既然这样优化完， 这里就没必要加判断了，还是修改为原来的
+#if 0
+void Fiber::swapOut()
+{
+    // SetThis(t_threadFiber.get());
+    // if (swapcontext(&m_ctx, &t_threadFiber->m_ctx)) {    // 与协程调度器功能有冲突
+    if (t_fiber != Scheduler::GetMainFiber()) {
+        SetThis(Scheduler::GetMainFiber());
+        if (swapcontext(&m_ctx, &Scheduler::GetMainFiber()->m_ctx)) {
+            SYLAR_ASSERT2(false, "swapcontext");
+        }
+    } else {    // 跟真正的main协程切换
+        SetThis(t_threadFiber.get());
+        if (swapcontext(&m_ctx, &t_threadFiber->m_ctx)) {
+            SYLAR_ASSERT2(false, "swapcontext");
+        } 
+    }
+}
+#endif
 
 void Fiber::SetThis(Fiber *f)
 {
@@ -181,17 +232,40 @@ void Fiber::MainFunc()
         cur->m_state = TERM;
     } catch (std::exception &ex) {
         cur->m_state = EXCEPT;
-        SYLAR_LOG_ERROR(g_logger) << "Fiber except: " << ex.what();
+        SYLAR_LOG_ERROR(g_logger) << "Fiber except: " << ex.what() << " Fiber_id=" << cur->getId() << std::endl << sylar::BacktraceToString();      
     } catch (...) {
         cur->m_state = EXCEPT;
-        SYLAR_LOG_ERROR(g_logger) << "Fiber except: ";
+        SYLAR_LOG_ERROR(g_logger) << "Fiber except: " << " Fiber_id=" << cur->getId() << std::endl << sylar::BacktraceToString();;
     }
 
     auto raw_ptr = cur.get();   // 裸指针
     cur.reset();
     raw_ptr->swapOut();
 
-    SYLAR_ASSERT2(false, "never reach");
+    SYLAR_ASSERT2(false, "never reach fiber_id=" + std::to_string(raw_ptr->getId()));
+}
+
+void Fiber::CallerMainFunc()
+{
+    Fiber::ptr cur = GetThis();
+    SYLAR_ASSERT(cur);
+    try {
+        cur->m_cb();
+        cur->m_cb = nullptr;   // 为什么要置为nullptr，与function有关，会使引用计数加1  看P28 23'48''
+        cur->m_state = TERM;
+    } catch (std::exception &ex) {
+        cur->m_state = EXCEPT;
+        SYLAR_LOG_ERROR(g_logger) << "Fiber except: " << ex.what() << " Fiber_id=" << cur->getId() << std::endl << sylar::BacktraceToString();      
+    } catch (...) {
+        cur->m_state = EXCEPT;
+        SYLAR_LOG_ERROR(g_logger) << "Fiber except: " << " Fiber_id=" << cur->getId() << std::endl << sylar::BacktraceToString();;
+    }
+
+    auto raw_ptr = cur.get();   // 裸指针
+    cur.reset();
+    raw_ptr->back();    // 不用swapOut(),用back()，为了优化,不要if else判断
+
+    SYLAR_ASSERT2(false, "never reach fiber_id=" + std::to_string(raw_ptr->getId()));
 }
 
 }

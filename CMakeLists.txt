@@ -61,5 +61,10 @@ add_dependencies(test_fiber sylar)
 redefine_file_macro(test_fiber)
 target_link_libraries(test_fiber ${LIB_LIB})
 
+add_executable(test_scheduler tests/test_scheduler.cpp)
+add_dependencies(test_scheduler sylar)
+redefine_file_macro(test_scheduler)
+target_link_libraries(test_scheduler ${LIB_LIB})
+
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 SET(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)

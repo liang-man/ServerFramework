@@ -14,9 +14,9 @@ pid_t GetThreadId();
 uint32_t GetFiberId();
 
 // 用skip参数越过自己这一层
-void Backtrace(std::vector<std::string> &bt, int size, int skip = 1);
+void Backtrace(std::vector<std::string> &bt, int size = 64, int skip = 1);
 
-std::string BacktraceToString(int size, int skip = 2, const std::string &prefix = "");
+std::string BacktraceToString(int size = 64, int skip = 2, const std::string &prefix = "");
 }
 
 #endif

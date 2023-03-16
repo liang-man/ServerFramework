@@ -35,7 +35,7 @@ public:
     void schedule(FiberOrCb fc, int threadId = -1) {
         bool need_tickle = false;
         {
-            MutexType::Lock lokc(&m_mutex);
+            MutexType::Lock lokc(m_mutex);
             need_tickle = scheduleNoLock(fc, threadId);
         }
         if (need_tickle) {
@@ -47,7 +47,7 @@ public:
     void schedule(InputIterator begin, InputIterator end) {
         bool need_tickle = false;
         {
-            MutexType::Lock lock(&m_mutex);   // 锁一次保证这组任务是连续的，在一个消息队列里
+            MutexType::Lock lock(m_mutex);   // 锁一次保证这组任务是连续的，在一个消息队列里
             while (begin != end) {
                 // 用的是指针，取地址，地址的话就会把里面的东西swap掉
                 need_tickle = scheduleNoLock(&*begin) || need_tickle;
@@ -61,7 +61,7 @@ protected:
     virtual void tickle();
     void run();     // 协程调度器真正在执行调度的方法, 是这个Scheduler类的核心
     virtual bool stopping();
-    virtual bool idle();    // 什么都不干的时候，应该执行idle()，为了解决协程调度器又没有任务做，但又不能使线程终止  具体怎么实现，要根据业务情况来实现子类
+    virtual void idle();    // 什么都不干的时候，应该执行idle()，为了解决协程调度器又没有任务做，但又不能使线程终止  具体怎么实现，要根据业务情况来实现子类
 
     void setThis();
 private:

@@ -26,12 +26,15 @@ private:
     Fiber();   // 不允许创建默认构造函数，所以把它变成私有的
 
 public:
-    Fiber(std::function<void()> cb, size_t stacksize = 0);    // functional解决了很多函数指针不适用的场景
+    Fiber(std::function<void()> cb, size_t stacksize = 0, bool use_caller = false);    // functional解决了很多函数指针不适用的场景
     ~Fiber();
 
     void reset(std::function<void()> cb);  // 重置协程函数，并重置状态，只能在INIT或TERM状态
     void swapIn();   // 切换到当前协程执行，自己开始执行了
     void swapOut();  // 把当前协程切换到后台，我不执行了，让出控制权
+
+    void call();
+    void back();
 
     uint64_t getId() const { return m_id; }
     State getState() const { return m_state; }
@@ -45,6 +48,7 @@ public:
     static uint64_t TotalFibers();  // 总协程数
 
     static void MainFunc();
+    static void CallerMainFunc();
     static uint64_t GetFiberId();
 private:
     uint64_t m_id = 0;

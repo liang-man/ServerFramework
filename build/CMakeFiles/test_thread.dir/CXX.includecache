@@ -80,6 +80,20 @@ assert.h
 util.h
 ../sylar/util.h
 
+../sylar/scheduler.h
+memory
+-
+vector
+-
+list
+-
+map
+-
+fiber.h
+../sylar/fiber.h
+thread.h
+../sylar/thread.h
+
 ../sylar/singleton.h
 memory
 -
@@ -95,6 +109,8 @@ singleton.h
 ../sylar/singleton.h
 thread.h
 ../sylar/thread.h
+scheduler.h
+../sylar/scheduler.h
 macro.h
 ../sylar/macro.h
 fiber.h
