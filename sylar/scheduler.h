@@ -4,6 +4,7 @@
 #include <memory>
 #include <vector>
 #include <list>
+#include <map>
 #include "fiber.h"
 #include "thread.h"
 
@@ -58,8 +59,9 @@ public:
     }
 protected:
     virtual void tickle();
-    void run();     // 协程调度器真正在执行调度的方法
+    void run();     // 协程调度器真正在执行调度的方法, 是这个Scheduler类的核心
     virtual bool stopping();
+    virtual bool idle();    // 什么都不干的时候，应该执行idle()，为了解决协程调度器又没有任务做，但又不能使线程终止  具体怎么实现，要根据业务情况来实现子类
 
     void setThis();
 private:
@@ -107,8 +109,8 @@ private:
 protected:
     std::vector<int> m_threadIds;
     size_t m_threadCount = 0;
-    size_t m_activeThreadCount = 0;
-    size_t m_idleThreadCount = 0;
+    std::atomic<size_t> m_activeThreadCount = {0};
+    std::atomic<size_t> m_idleThreadCount = {0};
     bool m_stopping = true;
     bool m_autoStop = false;       // 是否主动停止
     int m_rootThreadId = 0;    // usecaller的id

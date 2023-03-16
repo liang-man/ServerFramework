@@ -35,6 +35,7 @@ public:
 
     uint64_t getId() const { return m_id; }
     State getState() const { return m_state; }
+    void setState(State state) { m_state = state; }
 public:
     static void SetThis(Fiber *f);  // 设置当前协程
     static Fiber::ptr GetThis();           // 拿到自己的协程

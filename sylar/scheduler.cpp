@@ -69,6 +69,7 @@ void Scheduler::start()
  * stop分两种情况：
  * 1: scheduler用了usecaller，就一定要在创建了scheduler的那个线程中stop
  * 2: scheduler没有用usecallser，就可以在任意非它自己的线程中执行stop
+ * stop不能立马退出，要等协程调度器所有任务执行完在退出
 */
 void Scheduler::stop()
 {
@@ -110,7 +111,75 @@ void Scheduler::run()
     if (sylar::GetThreadId() != m_rootThreadId) {
         t_fiber = Fiber::GetThis().get();
     }
-    Fiber::ptr idle_fiber(new Fiber());
+    Fiber::ptr idle_fiber(new Fiber(std::bind(&Scheduler::idle, this)));
+    Fiber::ptr cb_fiber;   // 回调函数，function的协程
+    FiberAndThread ft;
+    while (true) {
+        ft.reset();
+        bool tickle_me = false;
+        {
+            MutexType::Lock lock(m_mutex);
+            auto it = m_fibers.begin();
+            while (it != m_fibers.end()) {
+                if (it->threadId != -1 && it->threadId != sylar::GetThreadId()) {
+                    ++it;
+                    tickle_me = true;   // 自己消耗了一个信号，也应该再发起一个信号，让其他线程再去有唤醒的机会，不过唤醒的线程是无序的，不能指定线程唤醒（思考如何优化，可以唤醒指定线程？）
+                    continue;
+                }
+                SYLAR_ASSERT(it->fiber || it->cb);
+                if (it->fiber && it->fiber->getState() == Fiber::EXEC) {
+                    ++it;
+                    continue;
+                }
+                ft = *it;
+                m_fibers.erase(it);
+            }
+        }
+        if (tickle_me) {
+            tickle();
+        }
+        if (ft.fiber && (ft.fiber->getState() != Fiber::TERM || ft.fiber->getState() != Fiber::EXCEPT)) {
+            ++m_activeThreadCount;
+            ft.fiber->swapIn();
+            --m_activeThreadCount;
+            if (ft.fiber->getState() == Fiber::READY) {
+                schedule(ft.fiber);
+            } else if (ft.fiber->getState() != Fiber::READY
+                    && ft.fiber->getState() != Fiber::EXCEPT) {
+                ft.fiber->setState(Fiber::HOLD);
+            }
+            ft.reset();
+        } else if (ft.cb) {
+            if (cb_fiber) {
+                cb_fiber->reset(&ft.cb);
+            } else {
+                cb_fiber.reset(new Fiber(ft.cb));
+            }
+            ft.reset();
+            ++m_activeThreadCount;
+            cb_fiber->swapIn();
+            --m_activeThreadCount;
+            if (cb_fiber->getState() == Fiber::READY) {
+                schedule(cb_fiber);
+                cb_fiber.reset();    // 智能指针.reset() 和 ->reset(nullptr)的区别？
+            } else if (cb_fiber->getState() == Fiber::EXCEPT || cb_fiber->getState() == Fiber::TERM) {
+                cb_fiber->reset(nullptr);    // 好像是不会引起析构?
+            } else { // if (cb_fiber->getState() != Fiber::TERM) {
+                ft.fiber->setState(Fiber::HOLD);
+                cb_fiber.reset();
+            }
+        } else {   // 当事情做完了，去ilde一下
+            if (idle_fiber->getState() == Fiber::TERM) {
+                break;
+            }
+            ++m_idleThreadCount;
+            idle_fiber->swapIn();
+            --m_idleThreadCount;
+            if (idle_fiber->getState() != Fiber::TERM || idle_fiber->getState() != Fiber::EXCEPT) {
+                idle_fiber->setState(Fiber::HOLD);
+            }
+        }
+    }
 }
 
 bool Scheduler::stopping()
