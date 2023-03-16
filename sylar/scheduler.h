@@ -27,8 +27,8 @@ public:
     static Scheduler *GetThis();   // 获取当前协程调度器
     static Fiber *GetMainFiber();  // 需要一个main协程来管理调度器
 
-    void start();
-    void stop();
+    void start();     // 启动线程池
+    void stop();     
 
     template<class FiberOrCb> 
     void schedule(FiberOrCb fc, int threadId = -1) {
@@ -58,6 +58,10 @@ public:
     }
 protected:
     virtual void tickle();
+    void run();     // 协程调度器真正在执行调度的方法
+    virtual bool stopping();
+
+    void setThis();
 private:
     template<class FiberOrCb>
     bool scheduleNoLock(FiberOrCb fc, int threadId) {
@@ -97,8 +101,17 @@ private:
 private:
     MutexType m_mutex;   // 互斥量
     std::vector<Thread::ptr> m_threads;   // 线程池
-    std::list<FiberAndThread> m_fibers;   // 即将要执行或计划执行的协程们
+    std::list<FiberAndThread> m_fibers;   // 即将要执行或计划执行的协程队列
+    Fiber::ptr m_rootFiber;               // 主协程
     std::string m_name;
+protected:
+    std::vector<int> m_threadIds;
+    size_t m_threadCount = 0;
+    size_t m_activeThreadCount = 0;
+    size_t m_idleThreadCount = 0;
+    bool m_stopping = true;
+    bool m_autoStop = false;       // 是否主动停止
+    int m_rootThreadId = 0;    // usecaller的id
 };
 
 }

@@ -34,6 +34,7 @@ public:
     void swapOut();  // 把当前协程切换到后台，我不执行了，让出控制权
 
     uint64_t getId() const { return m_id; }
+    State getState() const { return m_state; }
 public:
     static void SetThis(Fiber *f);  // 设置当前协程
     static Fiber::ptr GetThis();           // 拿到自己的协程
