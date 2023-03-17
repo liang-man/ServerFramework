@@ -20,6 +20,7 @@ link_directories(/usr/local/lib)
 set(LIB_SRC
     sylar/config.cpp
     sylar/fiber.cpp
+    sylar/iomanager.cpp
     sylar/log.cpp
     sylar/scheduler.cpp
     sylar/thread.cpp

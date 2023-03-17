@@ -26,6 +26,11 @@ private:
             Fiber::ptr fiber;        // 事件协程
             std::function<void()> cb;// 事件的回调函数
         };
+
+        EventContext &getContext(Event event);
+        void resetContext(EventContext &ctx);
+        void triggerEvent(Event event);
+
         int fd;                // 事件关联的句柄
         EventContext read;     // 读事件
         EventContext write;    // 写事件

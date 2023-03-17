@@ -258,6 +258,33 @@ sylar/fiber.cpp.s:
 	$(MAKE) -f CMakeFiles/sylar.dir/build.make CMakeFiles/sylar.dir/sylar/fiber.cpp.s
 .PHONY : sylar/fiber.cpp.s
 
+sylar/iomanager.o: sylar/iomanager.cpp.o
+
+.PHONY : sylar/iomanager.o
+
+# target to build an object file
+sylar/iomanager.cpp.o:
+	$(MAKE) -f CMakeFiles/sylar.dir/build.make CMakeFiles/sylar.dir/sylar/iomanager.cpp.o
+.PHONY : sylar/iomanager.cpp.o
+
+sylar/iomanager.i: sylar/iomanager.cpp.i
+
+.PHONY : sylar/iomanager.i
+
+# target to preprocess a source file
+sylar/iomanager.cpp.i:
+	$(MAKE) -f CMakeFiles/sylar.dir/build.make CMakeFiles/sylar.dir/sylar/iomanager.cpp.i
+.PHONY : sylar/iomanager.cpp.i
+
+sylar/iomanager.s: sylar/iomanager.cpp.s
+
+.PHONY : sylar/iomanager.s
+
+# target to generate assembly for a file
+sylar/iomanager.cpp.s:
+	$(MAKE) -f CMakeFiles/sylar.dir/build.make CMakeFiles/sylar.dir/sylar/iomanager.cpp.s
+.PHONY : sylar/iomanager.cpp.s
+
 sylar/log.o: sylar/log.cpp.o
 
 .PHONY : sylar/log.o
@@ -549,6 +576,9 @@ help:
 	@echo "... sylar/fiber.o"
 	@echo "... sylar/fiber.i"
 	@echo "... sylar/fiber.s"
+	@echo "... sylar/iomanager.o"
+	@echo "... sylar/iomanager.i"
+	@echo "... sylar/iomanager.s"
 	@echo "... sylar/log.o"
 	@echo "... sylar/log.i"
 	@echo "... sylar/log.s"

@@ -64,6 +64,8 @@ protected:
     virtual void idle();    // 什么都不干的时候，应该执行idle()，为了解决协程调度器又没有任务做，但又不能使线程终止  具体怎么实现，要根据业务情况来实现子类
 
     void setThis();
+
+    bool hasIdleThreads() { return m_idleThreadCount > 0; }
 private:
     template<class FiberOrCb>
     bool scheduleNoLock(FiberOrCb fc, int threadId) {
@@ -110,7 +112,7 @@ protected:
     std::vector<int> m_threadIds;
     size_t m_threadCount = 0;
     std::atomic<size_t> m_activeThreadCount = {0};
-    std::atomic<size_t> m_idleThreadCount = {0};
+    std::atomic<size_t> m_idleThreadCount = {0};     // 在IOManager中可以直接访问使用这些属性，但是private就不行，必须要通过public方法调用
     bool m_stopping = true;
     bool m_autoStop = false;       // 是否主动停止
     int m_rootThreadId = 0;    // usecaller的id
