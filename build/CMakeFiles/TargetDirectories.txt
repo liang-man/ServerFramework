@@ -1,3 +1,4 @@
+/home/liangman/sylar/build/CMakeFiles/test_iomanager.dir
 /home/liangman/sylar/build/CMakeFiles/test_fiber.dir
 /home/liangman/sylar/build/CMakeFiles/rebuild_cache.dir
 /home/liangman/sylar/build/CMakeFiles/test_util.dir

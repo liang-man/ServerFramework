@@ -67,5 +67,10 @@ add_dependencies(test_scheduler sylar)
 redefine_file_macro(test_scheduler)
 target_link_libraries(test_scheduler ${LIB_LIB})
 
+add_executable(test_iomanager tests/test_iomanager.cpp)
+add_dependencies(test_iomanager sylar)
+redefine_file_macro(test_iomanager)
+target_link_libraries(test_iomanager ${LIB_LIB})
+
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 SET(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)

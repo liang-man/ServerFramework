@@ -52,7 +52,7 @@ IOManager::IOManager(size_t threads, bool use_caller, const std::string &name)
     SYLAR_ASSERT(m_epfd > 0);
 
     int rt = pipe(m_tickleFds);
-    SYLAR_ASSERT(rt);
+    SYLAR_ASSERT(!rt);
 
     epoll_event event;
     memset(&event, 0, sizeof event);
@@ -60,10 +60,10 @@ IOManager::IOManager(size_t threads, bool use_caller, const std::string &name)
     event.data.fd = m_tickleFds[0];
 
     rt = fcntl(m_tickleFds[0], F_SETFL, O_NONBLOCK);
-    SYLAR_ASSERT(rt);
+    SYLAR_ASSERT(!rt);
 
     rt = epoll_ctl(m_epfd, EPOLL_CTL_ADD, m_tickleFds[0], &event);
-    SYLAR_ASSERT(rt);
+    SYLAR_ASSERT(!rt);
 
     m_fdContexts.resize(32);
 

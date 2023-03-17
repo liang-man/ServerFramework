@@ -8,15 +8,15 @@
 
 namespace sylar {
 
-class IOManager : Scheduler {
+class IOManager : public Scheduler {
 public:
     typedef std::shared_ptr<IOManager> ptr;
     typedef RWMutex RWMutexType;
 
     enum Event {
         NONE = 0x0,
-        READ = 0x1,
-        WRITE = 0x2
+        READ = 0x1,    // EPOLLIN
+        WRITE = 0x4    // EPOLLOUT
     };
 private:
     struct FdContext {
