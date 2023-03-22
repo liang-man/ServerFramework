@@ -27,6 +27,7 @@ CMakeFiles/sylar.dir/sylar/iomanager.cpp.o
  /home/liangman/sylar/sylar/scheduler.h
  /home/liangman/sylar/sylar/singleton.h
  /home/liangman/sylar/sylar/thread.h
+ /home/liangman/sylar/sylar/timer.h
  /home/liangman/sylar/sylar/util.h
 CMakeFiles/sylar.dir/sylar/log.cpp.o
  /home/liangman/sylar/sylar/config.h
@@ -49,6 +50,11 @@ CMakeFiles/sylar.dir/sylar/thread.cpp.o
  /home/liangman/sylar/sylar/singleton.h
  /home/liangman/sylar/sylar/thread.cpp
  /home/liangman/sylar/sylar/thread.h
+ /home/liangman/sylar/sylar/util.h
+CMakeFiles/sylar.dir/sylar/timer.cpp.o
+ /home/liangman/sylar/sylar/thread.h
+ /home/liangman/sylar/sylar/timer.cpp
+ /home/liangman/sylar/sylar/timer.h
  /home/liangman/sylar/sylar/util.h
 CMakeFiles/sylar.dir/sylar/util.cpp.o
  /home/liangman/sylar/sylar/fiber.h

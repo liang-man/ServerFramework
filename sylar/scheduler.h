@@ -50,7 +50,8 @@ public:
             MutexType::Lock lock(m_mutex);   // 锁一次保证这组任务是连续的，在一个消息队列里
             while (begin != end) {
                 // 用的是指针，取地址，地址的话就会把里面的东西swap掉
-                need_tickle = scheduleNoLock(&*begin) || need_tickle;
+                need_tickle = scheduleNoLock(&*begin, -1) || need_tickle;   // 无视线程
+                ++begin;
             }
         }
         if (need_tickle) {

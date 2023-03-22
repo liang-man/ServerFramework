@@ -5,10 +5,11 @@
 #include "scheduler.h"
 #include "thread.h"
 #include "fiber.h"
+#include "timer.h"
 
 namespace sylar {
 
-class IOManager : public Scheduler {
+class IOManager : public Scheduler, public TimerManager {
 public:
     typedef std::shared_ptr<IOManager> ptr;
     typedef RWMutex RWMutexType;
@@ -51,6 +52,8 @@ protected:
     void tickle() override;
     bool stopping() override;
     void idle() override;
+    void onTimerInsertAtFront() override;
+    bool stopping(uint64_t &timeout);
 
     void contextResize(size_t size);
 private:

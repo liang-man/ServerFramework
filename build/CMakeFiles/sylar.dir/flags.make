@@ -20,5 +20,7 @@ CXX_INCLUDES = -I/home/liangman/sylar/.
 
 # Custom defines: CMakeFiles/sylar.dir/sylar/thread.cpp.o_DEFINES = __FILE__="sylar/thread.cpp"
 
+# Custom defines: CMakeFiles/sylar.dir/sylar/timer.cpp.o_DEFINES = __FILE__="sylar/timer.cpp"
+
 # Custom defines: CMakeFiles/sylar.dir/sylar/util.cpp.o_DEFINES = __FILE__="sylar/util.cpp"
 

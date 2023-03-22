@@ -263,9 +263,19 @@ void IOManager::tickle()
     SYLAR_ASSERT(rt == 1);
 }
 
+bool IOManager::stopping(uint64_t &timeout)
+{
+    timeout = getNextTimer();
+    return timeout == ~0ull && m_pendingEventCount == 0 && Scheduler::stopping();
+}
+
+// 如果定时器没结束，也不能算结束了
 bool IOManager::stopping() 
 {
-    return Scheduler::stopping() && m_pendingEventCount == 0;
+    // return Scheduler::stopping() && m_pendingEventCount == 0;
+    // return m_pendingEventCount == 0 && !hasTimer() && Scheduler::stopping();
+    uint64_t timeout = 0;
+    return stopping(timeout);
 }
 
 // 核心
@@ -277,15 +287,21 @@ void IOManager::idle()
     });
  
     while (true) {
-        if (stopping()) {
+        uint64_t next_timeout = 0;
+        if (stopping(next_timeout)) {
             SYLAR_LOG_INFO(g_logger) << "name=" << getName() << " idle stopping exit";
-            break;
+            break;    
         }
 
         int rt = 0;
         do {
-            static const int MAX_TIMECUT = 5000;   // 5s
-            rt = epoll_wait(m_epfd, events, 64, MAX_TIMECUT);
+            static const int MAX_TIMEOUT = 3000;   // 3s      // 有了定时器就可以设置epoll_wait时间了  默认的最大超时时间为3s
+            if (next_timeout != ~0ull) {
+                next_timeout = (int)next_timeout > MAX_TIMEOUT ? MAX_TIMEOUT : next_timeout;
+            } else {
+                next_timeout = MAX_TIMEOUT;
+            }
+            rt = epoll_wait(m_epfd, events, 64, (int)next_timeout);
 
             if (rt < 0 && errno == EINTR) {
                 ;
@@ -293,6 +309,17 @@ void IOManager::idle()
                 break;
             }
         } while (true);
+
+        std::vector<std::function<void()>> cbs;
+        listExpiredCb(cbs);    // 返回当前时间点满足条件的回调
+        if (!cbs.empty()) {
+            // 这样是失败的
+            schedule(cbs.begin(), cbs.end());
+            // 这样一个一个是成功的，说明那个schedule迭代器是有问题的（检查发现是迭代器版本的schedule里begin没有自增，导致死循环了）
+            // for (auto &it : cbs)
+            //     schedule(it);
+            cbs.clear();
+        }
 
         for (int i = 0; i < rt; ++i) {
             epoll_event &event = events[i];
@@ -348,6 +375,13 @@ void IOManager::idle()
 
         raw_ptr->swapOut();
     }
+}
+
+// 一般的话，如果有一个新的定时器加到了它的前面，我们需要唤醒epoll_wait让他重新设置一下定时的时间
+void IOManager::onTimerInsertAtFront()
+{
+    // 往里面写一个事件，如果有另一个先epoll_wait,他就可以先唤醒，重新计算时间，就可以算到一个新的时间上去
+    tickle();
 }
 
 }
