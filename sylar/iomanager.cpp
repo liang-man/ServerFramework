@@ -65,7 +65,8 @@ IOManager::IOManager(size_t threads, bool use_caller, const std::string &name)
     rt = epoll_ctl(m_epfd, EPOLL_CTL_ADD, m_tickleFds[0], &event);
     SYLAR_ASSERT(!rt);
 
-    m_fdContexts.resize(32);
+    // m_fdContexts.resize(32);
+    contextResize(32);
 
     start();
 }
@@ -256,7 +257,7 @@ IOManager *IOManager::GetThis()
 void IOManager::tickle() 
 {
     // 每当执行它的时候，发一个消息
-    if (hasIdleThreads()) {
+    if (!hasIdleThreads()) {
         return;
     }
     int rt = write(m_tickleFds[1], "1", 1);

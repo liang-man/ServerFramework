@@ -1,6 +1,7 @@
 #include "scheduler.h"
 #include "log.h"
 #include "macro.h"
+#include "hook.h"
 
 namespace sylar {
 
@@ -107,12 +108,15 @@ void Scheduler::stop()
     //     return;
     // }
     if (m_rootFiber) {
-        while (!stopping()) {
-            if (m_rootFiber->getState() == Fiber::TERM || m_rootFiber->getState() == Fiber::EXCEPT) {
-                m_rootFiber.reset(new Fiber(std::bind(&Scheduler::run, this), 0, true));
-                SYLAR_LOG_INFO(g_logger) << " root fiber is term, reset";
-                t_fiber = m_rootFiber.get();    // 重新重置之后要赋值，否则就是自己在那里调来调去，产生死循环  可以尝试注释这句看bug长什么样？思考如何定位问题？
-            }
+        // while (!stopping()) {
+        //     if (m_rootFiber->getState() == Fiber::TERM || m_rootFiber->getState() == Fiber::EXCEPT) {
+        //         m_rootFiber.reset(new Fiber(std::bind(&Scheduler::run, this), 0, true));
+        //         SYLAR_LOG_INFO(g_logger) << " root fiber is term, reset";
+        //         t_fiber = m_rootFiber.get();    // 重新重置之后要赋值，否则就是自己在那里调来调去，产生死循环  可以尝试注释这句看bug长什么样？思考如何定位问题？
+        //     }
+        //     m_rootFiber->call();
+        // }
+        if (!stopping()) {
             m_rootFiber->call();
         }
     }
@@ -134,7 +138,7 @@ void Scheduler::setThis()
 void Scheduler::run()
 {
     SYLAR_LOG_INFO(g_logger) << "run";
-    // return;   // 调试
+    set_hook_enable(true);
     setThis();
     if (sylar::GetThreadId() != m_rootThreadId) {
         t_fiber = Fiber::GetThis().get();
@@ -161,21 +165,22 @@ void Scheduler::run()
                     continue;
                 }
                 ft = *it;
-                m_fibers.erase(it);
+                m_fibers.erase(it++);
                 ++m_activeThreadCount;
                 is_active = true;
                 break;
             }
+            tickle_me |= it != m_fibers.end();
         }
         if (tickle_me) {
             tickle();
         }
-        if (ft.fiber && (ft.fiber->getState() != Fiber::TERM || ft.fiber->getState() != Fiber::EXCEPT)) {
+        if (ft.fiber && (ft.fiber->getState() != Fiber::TERM && ft.fiber->getState() != Fiber::EXCEPT)) {
             ft.fiber->swapIn();
             --m_activeThreadCount;
             if (ft.fiber->getState() == Fiber::READY) {
                 schedule(ft.fiber);
-            } else if (ft.fiber->getState() != Fiber::READY
+            } else if (ft.fiber->getState() != Fiber::TERM
                     && ft.fiber->getState() != Fiber::EXCEPT) {
                 ft.fiber->setState(Fiber::HOLD);
             }
@@ -195,7 +200,7 @@ void Scheduler::run()
             } else if (cb_fiber->getState() == Fiber::EXCEPT || cb_fiber->getState() == Fiber::TERM) {
                 cb_fiber->reset(nullptr);    // 好像是不会引起析构?
             } else { // if (cb_fiber->getState() != Fiber::TERM) {
-                ft.fiber->setState(Fiber::HOLD);
+                cb_fiber->setState(Fiber::HOLD);
                 cb_fiber.reset();
             }
         } else {   // 当事情做完了，去ilde一下

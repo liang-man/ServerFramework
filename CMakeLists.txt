@@ -20,6 +20,7 @@ link_directories(/usr/local/lib)
 set(LIB_SRC
     sylar/config.cpp
     sylar/fiber.cpp
+    sylar/hook.cpp
     sylar/iomanager.cpp
     sylar/log.cpp
     sylar/scheduler.cpp
@@ -35,6 +36,7 @@ set(LIB_LIB
     sylar
     yaml-cpp
     pthread
+    dl
 )
 
 add_executable(test_log tests/test_log.cpp)
@@ -72,6 +74,11 @@ add_executable(test_iomanager tests/test_iomanager.cpp)
 add_dependencies(test_iomanager sylar)
 redefine_file_macro(test_iomanager)
 target_link_libraries(test_iomanager ${LIB_LIB})
+
+add_executable(test_hook tests/test_hook.cpp)
+add_dependencies(test_hook sylar)
+redefine_file_macro(test_hook)
+target_link_libraries(test_hook ${LIB_LIB})
 
 SET(EXECUTABLE_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/bin)
 SET(LIBRARY_OUTPUT_PATH ${PROJECT_SOURCE_DIR}/lib)
